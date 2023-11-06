@@ -52,8 +52,7 @@ class WorkbookManager:
             header = False
 
             if not control_id:
-                control_section = row[column_indices['Section #']]
-                control_id = control_section
+                control_id = row[column_indices['Section #']]
                 header = True
 
             control = Control(control_id, title, description, level, header)
