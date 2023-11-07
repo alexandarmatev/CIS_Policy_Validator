@@ -22,14 +22,8 @@ class WorkbookManager:
     def get_scope_levels(cls):
         return cls._SCOPE_LEVELS
 
-    def get_worksheet_attributes(self, scope_level=None):
-        scope_levels = WorkbookManager.get_scope_levels()
-
-        if scope_level and (scope_level in scope_levels):
-            worksheet = self._workbook[f'Level {scope_level}']
-        else:
-            worksheet = self._workbook['Level 1']
-
+    def _get_worksheet_attributes(self, scope_level):
+        worksheet = self._workbook[f'Level {scope_level}']
         header_row = next(worksheet.iter_rows(min_row=1, max_row=1, values_only=True))
         column_indices = {title: index for index, title in enumerate(header_row)}
 
@@ -41,7 +35,7 @@ class WorkbookManager:
         if (scope_level and scope_level not in scope_levels) or not scope_level:
             scope_level = 1
 
-        worksheet, header_row, column_indices = self.get_worksheet_attributes(scope_level)
+        worksheet, header_row, column_indices = self._get_worksheet_attributes(scope_level)
 
         all_scope_controls = []
         for row in worksheet.iter_rows(min_row=2, values_only=True):
