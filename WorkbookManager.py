@@ -56,7 +56,7 @@ class WorkbookManager:
             scope_level = 1
         return self._cache[f'MacOS L{scope_level}']['Sonoma 14.0']
 
-    def get_all_scope_controls(self):
+    def get_all_controls(self):
         return self._cache
 
     def get_control_by_id(self, *, control_level=None, control_id=None):
