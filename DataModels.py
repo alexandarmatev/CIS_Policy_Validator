@@ -7,5 +7,12 @@ class Control:
     title: str
     description: str
     level: int
-    header: bool
     audit_cmd: str = None
+
+
+@dataclass
+class Header:
+    header_id: int
+    title: str
+    description: str
+    level: int
