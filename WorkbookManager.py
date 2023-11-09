@@ -43,9 +43,9 @@ class WorkbookManager:
         return control_id
 
     def _validate_and_get_items_by_type(self, scope_level, item_type):
-        if item_type == 'control':
+        if item_type.casefold() == 'control':
             scope_items = self.get_scope_controls(scope_level=scope_level)
-        elif item_type == 'header':
+        elif item_type.casefold() == 'header':
             scope_items = self.get_control_scope_headers(scope_level=scope_level)
         else:
             raise KeyError('Invalid item_id has been provided.')
