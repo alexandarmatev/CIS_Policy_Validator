@@ -48,7 +48,7 @@ class WorkbookManager:
         elif item_type.casefold() == 'header':
             scope_items = self.get_control_scope_headers(scope_level=scope_level)
         else:
-            raise KeyError(f'Invalid item type "{item_type}" provided. Item types can be either "control" or "header"')
+            raise KeyError(f'Invalid item type "{item_type}" provided. Item types can be either "control" or "header".')
         return scope_items
 
     def _get_worksheet_attributes(self, scope_level):
