@@ -1,35 +1,50 @@
 from DataModels import Control, Header
 import openpyxl
+import os
+from openpyxl.worksheet.worksheet import Worksheet
+from typing import Dict, Tuple, Set, List, Iterator
 
 
 class WorkbookManager:
     _SCOPE_LEVELS = {1, 2}
 
     def __init__(self, workbook_path: str):
-        self._workbook_path = workbook_path
+        self._workbook_path = self._validate_and_return_file_path(workbook_path)
         self._workbook = openpyxl.load_workbook(self._workbook_path)
         self._cache = None
         self._headers = None
         self._scope_levels = WorkbookManager.get_scope_levels()
         self._populate_cache_and_headers()
 
+    @staticmethod
+    def _validate_and_return_file_path(path: str) -> str:
+        if not os.path.exists(path):
+            raise FileNotFoundError(f'The file at path {path} does not exist.')
+        if not os.path.isfile(path):
+            raise IsADirectoryError(f'The path {path} is not a file.')
+        if not os.access(path, os.R_OK):
+            raise PermissionError(f'The file at path {path} is not readable.')
+        if not path.casefold().endswith('.xlsx'):
+            raise ValueError(f'The file at path {path} is not a valid Excel workbook file.')
+        return path
+
     @property
-    def path(self):
+    def path(self) -> str:
         return self._workbook_path
 
     @path.setter
     def path(self, new_path: str):
-        self._workbook_path = new_path
+        self._workbook_path = self._validate_and_return_file_path(new_path)
         self._workbook = openpyxl.load_workbook(self._workbook_path)
         self._cache = None
         self._headers = None
         self._populate_cache_and_headers()
 
     @classmethod
-    def get_scope_levels(cls):
+    def get_scope_levels(cls) -> Set:
         return cls._SCOPE_LEVELS
 
-    def _scope_level_validator(self, scope_level):
+    def _validate_and_return_scope_level(self, scope_level: int) -> int:
         if not isinstance(scope_level, int):
             raise ValueError('The scope level must be provided as integer.')
         if scope_level not in self._scope_levels:
@@ -37,12 +52,12 @@ class WorkbookManager:
         return scope_level
 
     @staticmethod
-    def _control_id_validator(control_id):
+    def _validate_and_return_item_id(control_id: str) -> str:
         if not isinstance(control_id, str):
             raise TypeError(f'control_id must be a string, got {type(control_id).__name__}')
         return control_id
 
-    def _validate_and_get_items_by_type(self, scope_level, item_type):
+    def _validate_and_get_items_by_type(self, scope_level: int, item_type: str) -> List[Dict[str, Control]] | List[Dict[str, Header]]:
         if item_type.casefold() == 'control':
             scope_items = self.get_scope_controls(scope_level=scope_level)
         elif item_type.casefold() == 'header':
@@ -51,7 +66,7 @@ class WorkbookManager:
             raise KeyError(f'Invalid item type "{item_type}" provided. Item types can be either "control" or "header".')
         return scope_items
 
-    def _get_worksheet_attributes(self, scope_level):
+    def _get_worksheet_attributes(self, scope_level: int) -> Tuple[Worksheet, Dict[str, int]]:
         worksheet = self._workbook[f'Level {scope_level}']
         header_row = next(worksheet.iter_rows(min_row=1, max_row=1, values_only=True))
         column_indices = {title: index for index, title in enumerate(header_row)}
@@ -59,7 +74,7 @@ class WorkbookManager:
         return worksheet, column_indices
 
     @staticmethod
-    def _get_worksheet_control_attributes(worksheet, column_indices):
+    def _get_worksheet_control_attributes(worksheet: Worksheet, column_indices: Dict[str, int]) -> Iterator[Tuple[int, str, str, bool]]:
         for row in worksheet.iter_rows(min_row=2, values_only=True):
             control_id = row[column_indices['Recommendation #']]
             title = row[column_indices['Title']]
@@ -89,9 +104,9 @@ class WorkbookManager:
                 control = Control(control_id, title, description, level)
                 self._cache[f'MacOS Sonoma L{level}'].append({control_id: control})
 
-    def get_item_by_id(self, *, scope_level: int = 1, item_id: str, item_type: str):
-        scope_level = self._scope_level_validator(scope_level)
-        item_id = self._control_id_validator(item_id)
+    def get_item_by_id(self, *, scope_level: int = 1, item_id: str, item_type: str) -> Control | Header:
+        scope_level = self._validate_and_return_scope_level(scope_level)
+        item_id = self._validate_and_return_item_id(item_id)
         scope_items = self._validate_and_get_items_by_type(scope_level, item_type)
 
         for item_dict in scope_items:
@@ -100,18 +115,18 @@ class WorkbookManager:
 
         raise KeyError(f'{item_type.capitalize()} with ID {item_id} is not in level {scope_level} of {item_type}s.')
 
-    def get_scope_controls(self, *, scope_level: int = 1):
-        scope_level = self._scope_level_validator(scope_level)
+    def get_scope_controls(self, *, scope_level: int = 1) -> List[Dict[str, Control]]:
+        scope_level = self._validate_and_return_scope_level(scope_level)
         return self._cache[f'MacOS Sonoma L{scope_level}']
 
-    def get_all_controls(self):
+    def get_all_controls(self) -> Dict[str, List[Dict[str, Control]]]:
         return self._cache
 
-    def get_control_scope_headers(self, *, scope_level: int = 1):
-        scope_level = self._scope_level_validator(scope_level)
+    def get_control_scope_headers(self, *, scope_level: int = 1) -> List[Dict[str, Header]]:
+        scope_level = self._validate_and_return_scope_level(scope_level)
         return self._headers[f'level {scope_level}']
 
-    def get_all_headers(self):
+    def get_all_headers(self) -> Dict[str, List[Dict[str, Header]]]:
         return self._headers
 
 
