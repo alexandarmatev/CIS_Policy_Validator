@@ -74,7 +74,7 @@ class WorkbookManager:
         return worksheet, column_indices
 
     @staticmethod
-    def _get_worksheet_control_attributes(worksheet: Worksheet, column_indices: Dict[str, int]) -> Iterator[Tuple[int, str, str, bool]]:
+    def _get_worksheet_control_attributes(worksheet: Worksheet, column_indices: Dict[str, int]) -> Iterator[Tuple[str, str, str, bool]]:
         for row in worksheet.iter_rows(min_row=2, values_only=True):
             control_id = row[column_indices['Recommendation #']]
             title = row[column_indices['Title']]
@@ -98,10 +98,10 @@ class WorkbookManager:
             for control_id, title, description, is_header in worksheet_row_attrs:
                 if is_header:
                     header_id = control_id
-                    header = Header(header_id, title, description, level)
+                    header = Header(header_id=header_id, title=title, description=description, level=level)
                     self._headers[f'level {level}'].append({header_id: header})
                     continue
-                control = Control(control_id, title, description, level)
+                control = Control(control_id=control_id, title=title, description=description, level=level)
                 self._cache[f'MacOS Sonoma L{level}'].append({control_id: control})
 
     def get_item_by_id(self, *, scope_level: int = 1, item_id: str, item_type: str) -> Control | Header:
