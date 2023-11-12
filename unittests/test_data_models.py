@@ -1,5 +1,5 @@
 import unittest
-from DataModels import Control, Header
+from DataModels import Recommendation, RecommendHeader
 
 
 def run_tests(test_class):
@@ -10,22 +10,22 @@ def run_tests(test_class):
 
 class TestControl(unittest.TestCase):
     def setUp(self):
-        self.control_id = '1.1.1'
+        self.recommend_id = '1.1.1'
         self.title = 'Control Title'
         self.description = 'Control Description'
         self.level = 1
         self.audit_cmd = 'ls -l | grep -q "audit"'
 
-    def create_control(self):
-        return Control(control_id=self.control_id,
-                       title=self.title,
-                       description=self.description,
-                       level=self.level,
-                       audit_cmd=self.audit_cmd)
+    def create_recommendation(self):
+        return Recommendation(recommend_id=self.recommend_id,
+                              title=self.title,
+                              description=self.description,
+                              level=self.level,
+                              audit_cmd=self.audit_cmd)
 
-    def test_create_control(self):
-        control = self.create_control()
-        self.assertEqual(self.control_id, control.control_id)
+    def test_create_recommendation(self):
+        control = self.create_recommendation()
+        self.assertEqual(self.recommend_id, control.recommend_id)
         self.assertEqual(self.title, control.title)
         self.assertEqual(self.description, control.description)
         self.assertEqual(self.level, control.level)

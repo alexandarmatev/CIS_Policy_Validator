@@ -1,4 +1,4 @@
-from DataModels import Control, Header
+from DataModels import Recommendation, RecommendHeader
 import openpyxl
 import os
 from openpyxl.worksheet.worksheet import Worksheet
@@ -57,11 +57,11 @@ class WorkbookManager:
             raise TypeError(f'control_id must be a string, got {type(control_id).__name__}')
         return control_id
 
-    def _validate_and_get_items_by_type(self, scope_level: int, item_type: str) -> List[Dict[str, Control]] | List[Dict[str, Header]]:
-        if item_type.casefold() == 'control':
-            scope_items = self.get_scope_controls(scope_level=scope_level)
-        elif item_type.casefold() == 'header':
-            scope_items = self.get_control_scope_headers(scope_level=scope_level)
+    def _validate_and_get_items_by_type(self, scope_level: int, item_type: str) -> List[Dict[str, Recommendation]] | List[Dict[str, RecommendHeader]]:
+        if item_type.casefold() == 'recommendation':
+            scope_items = self.get_scope_recommendations(scope_level=scope_level)
+        elif item_type.casefold() == 'recommend_header':
+            scope_items = self.get_recommendation_scope_headers(scope_level=scope_level)
         else:
             raise KeyError(f'Invalid item type "{item_type}" provided. Item types can be either "control" or "header".')
         return scope_items
@@ -74,18 +74,18 @@ class WorkbookManager:
         return worksheet, column_indices
 
     @staticmethod
-    def _get_worksheet_control_attributes(worksheet: Worksheet, column_indices: Dict[str, int]) -> Iterator[Tuple[str, str, str, bool]]:
+    def _get_worksheet_recommendation_attributes(worksheet: Worksheet, column_indices: Dict[str, int]) -> Iterator[Tuple[str, str, str, bool]]:
         for row in worksheet.iter_rows(min_row=2, values_only=True):
-            control_id = row[column_indices['Recommendation #']]
+            recommend_id = row[column_indices['Recommendation #']]
             title = row[column_indices['Title']]
             description = row[column_indices['Description']]
             is_header = False
 
-            if not control_id:
+            if not recommend_id:
                 is_header = True
-                control_id = row[column_indices['Section #']]
+                recommend_id = row[column_indices['Section #']]
 
-            yield control_id, title, description, is_header
+            yield recommend_id, title, description, is_header
 
     def _populate_cache_and_headers(self):
         self._cache = {'MacOS Sonoma L1': [], 'MacOS Sonoma L2': []}
@@ -93,18 +93,17 @@ class WorkbookManager:
 
         for level in self._scope_levels:
             worksheet, column_indices = self._get_worksheet_attributes(level)
-            worksheet_row_attrs = self._get_worksheet_control_attributes(worksheet, column_indices)
+            worksheet_row_attrs = self._get_worksheet_recommendation_attributes(worksheet, column_indices)
 
-            for control_id, title, description, is_header in worksheet_row_attrs:
+            for recommend_id, title, description, is_header in worksheet_row_attrs:
                 if is_header:
-                    header_id = control_id
-                    header = Header(header_id=header_id, title=title, description=description, level=level)
-                    self._headers[f'level {level}'].append({header_id: header})
+                    header = RecommendHeader(header_id=recommend_id, title=title, description=description, level=level)
+                    self._headers[f'level {level}'].append({recommend_id: header})
                     continue
-                control = Control(control_id=control_id, title=title, description=description, level=level)
-                self._cache[f'MacOS Sonoma L{level}'].append({control_id: control})
+                recommendation = Recommendation(recommend_id=recommend_id, title=title, description=description, level=level)
+                self._cache[f'MacOS Sonoma L{level}'].append({recommend_id: recommendation})
 
-    def get_item_by_id(self, *, scope_level: int = 1, item_id: str, item_type: str) -> Control | Header:
+    def get_item_by_id(self, *, scope_level: int = 1, item_id: str, item_type: str) -> Recommendation | RecommendHeader:
         scope_level = self._validate_and_return_scope_level(scope_level)
         item_id = self._validate_and_return_item_id(item_id)
         scope_items = self._validate_and_get_items_by_type(scope_level, item_type)
@@ -115,18 +114,18 @@ class WorkbookManager:
 
         raise KeyError(f'{item_type.capitalize()} with ID {item_id} is not in level {scope_level} of {item_type}s.')
 
-    def get_scope_controls(self, *, scope_level: int = 1) -> List[Dict[str, Control]]:
+    def get_scope_recommendations(self, *, scope_level: int = 1) -> List[Dict[str, Recommendation]]:
         scope_level = self._validate_and_return_scope_level(scope_level)
         return self._cache[f'MacOS Sonoma L{scope_level}']
 
-    def get_all_controls(self) -> Dict[str, List[Dict[str, Control]]]:
+    def get_all_recommendations(self) -> Dict[str, List[Dict[str, Recommendation]]]:
         return self._cache
 
-    def get_control_scope_headers(self, *, scope_level: int = 1) -> List[Dict[str, Header]]:
+    def get_recommendation_scope_headers(self, *, scope_level: int = 1) -> List[Dict[str, RecommendHeader]]:
         scope_level = self._validate_and_return_scope_level(scope_level)
         return self._headers[f'level {scope_level}']
 
-    def get_all_headers(self) -> Dict[str, List[Dict[str, Header]]]:
+    def get_all_recommendation_headers(self) -> Dict[str, List[Dict[str, RecommendHeader]]]:
         return self._headers
 
 

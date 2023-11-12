@@ -7,8 +7,8 @@ def _type_validator(attr_name, attr_value, attr_type):
 
 
 @dataclass(kw_only=True)
-class Control:
-    control_id: str
+class Recommendation:
+    recommend_id: str
     title: str
     description: str
     level: int
@@ -21,7 +21,7 @@ class Control:
 
 
 @dataclass(kw_only=True, frozen=True)
-class Header:
+class RecommendHeader:
     header_id: str
     title: str
     description: str
