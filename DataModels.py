@@ -12,6 +12,7 @@ class Recommendation:
     title: str
     description: str
     level: int
+    assessment_method: str
     audit_cmd: str = None
 
     def __post_init__(self):
@@ -31,3 +32,4 @@ class RecommendHeader:
         for attr_name, attr_type in self.__annotations__.items():
             attr_value = getattr(self, attr_name)
             _type_validator(attr_name, attr_value, attr_type)
+

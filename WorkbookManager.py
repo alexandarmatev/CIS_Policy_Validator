@@ -1,3 +1,5 @@
+import re
+
 from DataModels import Recommendation, RecommendHeader
 import openpyxl
 import os
@@ -14,6 +16,7 @@ class WorkbookManager:
         self._cache = None
         self._headers = None
         self._scope_levels = WorkbookManager.get_scope_levels()
+        self._benchmark_profiles = self._get_benchmark_profiles()
         self._populate_cache_and_headers()
 
     @staticmethod
@@ -44,6 +47,16 @@ class WorkbookManager:
     def get_scope_levels(cls) -> Set:
         return cls._SCOPE_LEVELS
 
+    def _get_benchmark_profiles(self) -> list:
+        regex_pattern = r'(Level\s\d\s-\s\w+ \d+\.\d{1,2}(?:\s\w+)*)'
+        overview_worksheet = self._workbook['Overview - Glossary']
+        overview_paragraphs = str([paragraph for paragraph in overview_worksheet.iter_rows(values_only=True)])
+        return re.findall(regex_pattern, overview_paragraphs)
+
+    @property
+    def benchmark_profiles(self) -> list:
+        return self._benchmark_profiles
+
     def _validate_and_return_scope_level(self, scope_level: int) -> int:
         if not isinstance(scope_level, int):
             raise ValueError('The scope level must be provided as integer.')
@@ -61,12 +74,12 @@ class WorkbookManager:
         if item_type.casefold() == 'recommendation':
             scope_items = self.get_scope_recommendations(scope_level=scope_level)
         elif item_type.casefold() == 'recommend_header':
-            scope_items = self.get_recommendation_scope_headers(scope_level=scope_level)
+            scope_items = self.get_recommendations_scope_headers(scope_level=scope_level)
         else:
             raise KeyError(f'Invalid item type "{item_type}" provided. Item types can be either "control" or "header".')
         return scope_items
 
-    def _get_worksheet_attributes(self, scope_level: int) -> Tuple[Worksheet, Dict[str, int]]:
+    def _get_worksheet_scope_headers(self, scope_level: int) -> Tuple[Worksheet, Dict[str, int]]:
         worksheet = self._workbook[f'Level {scope_level}']
         header_row = next(worksheet.iter_rows(min_row=1, max_row=1, values_only=True))
         column_indices = {title: index for index, title in enumerate(header_row)}
@@ -79,28 +92,33 @@ class WorkbookManager:
             recommend_id = row[column_indices['Recommendation #']]
             title = row[column_indices['Title']]
             description = row[column_indices['Description']]
+            assessment_method = row[column_indices['Assessment Status']]
             is_header = False
 
             if not recommend_id:
                 is_header = True
                 recommend_id = row[column_indices['Section #']]
 
-            yield recommend_id, title, description, is_header
+            yield recommend_id, title, description, assessment_method, is_header
 
     def _populate_cache_and_headers(self):
         self._cache = {'MacOS Sonoma L1': [], 'MacOS Sonoma L2': []}
         self._headers = {'level 1': [], 'level 2': []}
 
         for level in self._scope_levels:
-            worksheet, column_indices = self._get_worksheet_attributes(level)
+            worksheet, column_indices = self._get_worksheet_scope_headers(level)
             worksheet_row_attrs = self._get_worksheet_recommendation_attributes(worksheet, column_indices)
 
-            for recommend_id, title, description, is_header in worksheet_row_attrs:
+            for recommend_id, title, description, assessment_method, is_header in worksheet_row_attrs:
                 if is_header:
                     header = RecommendHeader(header_id=recommend_id, title=title, description=description, level=level)
                     self._headers[f'level {level}'].append({recommend_id: header})
                     continue
-                recommendation = Recommendation(recommend_id=recommend_id, title=title, description=description, level=level)
+                recommendation = Recommendation(recommend_id=recommend_id,
+                                                title=title,
+                                                description=description,
+                                                assessment_method=assessment_method,
+                                                level=level)
                 self._cache[f'MacOS Sonoma L{level}'].append({recommend_id: recommendation})
 
     def get_item_by_id(self, *, scope_level: int = 1, item_id: str, item_type: str) -> Recommendation | RecommendHeader:
@@ -121,7 +139,7 @@ class WorkbookManager:
     def get_all_recommendations(self) -> Dict[str, List[Dict[str, Recommendation]]]:
         return self._cache
 
-    def get_recommendation_scope_headers(self, *, scope_level: int = 1) -> List[Dict[str, RecommendHeader]]:
+    def get_recommendations_scope_headers(self, *, scope_level: int = 1) -> List[Dict[str, RecommendHeader]]:
         scope_level = self._validate_and_return_scope_level(scope_level)
         return self._headers[f'level {scope_level}']
 
