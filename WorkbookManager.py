@@ -133,16 +133,15 @@ class WorkbookManager:
             yield recommend_id, title, description, rationale, impact, assessment_method, is_header
 
     def _initialize_cache_and_headers_keys(self):
-        cache_headers_mapping = {}
+        cache_mapping = {}
+        headers_mapping = {}
         for level, benchmark_profiles in self._scope_levels_os_mapping.items():
             for profile in benchmark_profiles:
-                cache_headers_mapping[profile] = []
-        return cache_headers_mapping
+                cache_mapping[profile], headers_mapping[profile] = [], []
+        return cache_mapping, headers_mapping
 
     def _populate_cache_and_headers(self):
-        cache_headers_mapping = self._initialize_cache_and_headers_keys()
-        self._cache = cache_headers_mapping
-        self._headers = cache_headers_mapping
+        self._cache, self._headers = self._initialize_cache_and_headers_keys()
 
         for level, benchmark_profiles in self._scope_levels_os_mapping.items():
             worksheet, column_indices = self._get_worksheet_scope_headers(level)
