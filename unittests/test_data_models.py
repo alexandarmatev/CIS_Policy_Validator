@@ -11,25 +11,31 @@ def run_tests(test_class):
 class TestControl(unittest.TestCase):
     def setUp(self):
         self.recommend_id = '1.1.1'
-        self.title = 'Control Title'
-        self.description = 'Control Description'
         self.level = 1
+        self.title = 'Control Title'
+        self.rationale = 'Rationale Statement'
+        self.impact = 'Impact Statement'
+        self.assessment_method = 'Automated'
         self.audit_cmd = 'ls -l | grep -q "audit"'
 
     def create_recommendation(self):
         return Recommendation(recommend_id=self.recommend_id,
-                              title=self.title,
-                              description=self.description,
                               level=self.level,
+                              title=self.title,
+                              rationale=self.rationale,
+                              impact=self.impact,
+                              assessment_method=self.assessment_method,
                               audit_cmd=self.audit_cmd)
 
     def test_create_recommendation(self):
-        control = self.create_recommendation()
-        self.assertEqual(self.recommend_id, control.recommend_id)
-        self.assertEqual(self.title, control.title)
-        self.assertEqual(self.description, control.description)
-        self.assertEqual(self.level, control.level)
-        self.assertEqual(self.audit_cmd, control.audit_cmd)
+        recommendation = self.create_recommendation()
+        self.assertEqual(self.recommend_id, recommendation.recommend_id)
+        self.assertEqual(self.level, recommendation.level)
+        self.assertEqual(self.rationale, recommendation.rationale)
+        self.assertEqual(self.title, recommendation.title)
+        self.assertEqual(self.impact, recommendation.impact)
+        self.assertEqual(self.assessment_method, recommendation.assessment_method)
+        self.assertEqual(self.audit_cmd, recommendation.audit_cmd)
 
 
 run_tests(TestControl)

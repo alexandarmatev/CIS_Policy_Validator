@@ -9,9 +9,10 @@ def _type_validator(attr_name, attr_value, attr_type):
 @dataclass(kw_only=True)
 class Recommendation:
     recommend_id: str
-    title: str
-    description: str
     level: int
+    title: str
+    rationale: str
+    impact: str
     assessment_method: str
     audit_cmd: str = None
 
@@ -24,9 +25,9 @@ class Recommendation:
 @dataclass(kw_only=True, frozen=True)
 class RecommendHeader:
     header_id: str
+    level: int
     title: str
     description: str
-    level: int
 
     def __post_init__(self):
         for attr_name, attr_type in self.__annotations__.items():

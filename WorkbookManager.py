@@ -14,9 +14,9 @@ class WorkbookManager:
         self._workbook_path = self._validate_and_return_file_path(workbook_path)
         self._workbook = openpyxl.load_workbook(self._workbook_path)
         self._scope_levels = self.get_scope_levels()
-        self._benchmark_profile_rex = self.get_benchmark_profiles_rex()
-        self._scope_levels_os_mapping = self._populate_scope_levels_os_mapping()
+        self._benchmark_profiles_rex = self.get_benchmark_profiles_rex()
         self._benchmark_profiles = self._get_benchmark_profiles()
+        self._scope_levels_os_mapping = self._populate_scope_levels_os_mapping()
         self._cache = None
         self._headers = None
         self._populate_cache_and_headers()
@@ -41,9 +41,19 @@ class WorkbookManager:
     def path(self, new_path: str):
         self._workbook_path = self._validate_and_return_file_path(new_path)
         self._workbook = openpyxl.load_workbook(self._workbook_path)
+        self._scope_levels_os_mapping = self.scope_levels_os_mapping
+        self._benchmark_profiles = self.benchmark_profiles
         self._cache = None
         self._headers = None
         self._populate_cache_and_headers()
+
+    @property
+    def benchmark_profiles(self) -> List[Tuple]:
+        return self._get_benchmark_profiles()
+
+    @property
+    def scope_levels_os_mapping(self) -> Dict:
+        return self._scope_levels_os_mapping
 
     @classmethod
     def get_scope_levels(cls) -> Set:
@@ -53,23 +63,15 @@ class WorkbookManager:
     def get_benchmark_profiles_rex(cls) -> str:
         return cls._BENCHMARK_PROFILES_REX
 
-    @property
-    def benchmark_profiles(self) -> List[Tuple]:
-        return self._get_benchmark_profiles()
-
-    @property
-    def scope_levels_os_mapping(self):
-        return self._scope_levels_os_mapping
-
     def _get_benchmark_profiles(self) -> list:
-        regex_pattern = self.get_benchmark_profiles_rex()
+        regex_pattern = self._benchmark_profiles_rex
         overview_worksheet = self._workbook['Overview - Glossary']
         overview_paragraphs = str([paragraph for paragraph in overview_worksheet.iter_rows(values_only=True)])
         return re.findall(regex_pattern, overview_paragraphs)
 
     def _populate_scope_levels_os_mapping(self) -> Dict:
-        benchmark_profiles = self._get_benchmark_profiles()
-        allowed_levels = self.get_scope_levels()
+        benchmark_profiles = self._benchmark_profiles
+        allowed_levels = self._scope_levels
         scope_levels_os_mapping = {level: [] for level in allowed_levels}
         for profile, profile_level in benchmark_profiles:
             profile_level = int(profile_level)
@@ -103,7 +105,7 @@ class WorkbookManager:
         elif item_type.casefold() == 'recommend_header':
             scope_items = self.get_recommendations_scope_headers(scope_level=scope_level)
         else:
-            raise KeyError(f'Invalid item type "{item_type}" provided. Item types can be either "control" or "header".')
+            raise KeyError(f'Invalid item type "{item_type}" provided. Item types can be either "recommendation" or "recommend_header".')
         return scope_items
 
     def _get_worksheet_scope_headers(self, scope_level: int) -> Tuple[Worksheet, Dict[str, int]]:
@@ -119,16 +121,18 @@ class WorkbookManager:
             recommend_id = row[column_indices['Recommendation #']]
             title = row[column_indices['Title']]
             description = row[column_indices['Description']]
+            rationale = row[column_indices['Rationale Statement']]
+            impact = row[column_indices['Impact Statement']]
             assessment_method = row[column_indices['Assessment Status']]
             is_header = False
 
-            if not recommend_id:
+            if not assessment_method:
                 is_header = True
                 recommend_id = row[column_indices['Section #']]
 
-            yield recommend_id, title, description, assessment_method, is_header
+            yield recommend_id, title, description, rationale, impact, assessment_method, is_header
 
-    def _initialize_cache_headers_keys(self):
+    def _initialize_cache_and_headers_keys(self):
         cache_headers_mapping = {}
         for level, benchmark_profiles in self._scope_levels_os_mapping.items():
             for profile in benchmark_profiles:
@@ -136,7 +140,7 @@ class WorkbookManager:
         return cache_headers_mapping
 
     def _populate_cache_and_headers(self):
-        cache_headers_mapping = self._initialize_cache_headers_keys()
+        cache_headers_mapping = self._initialize_cache_and_headers_keys()
         self._cache = cache_headers_mapping
         self._headers = cache_headers_mapping
 
@@ -145,20 +149,23 @@ class WorkbookManager:
             worksheet_row_attrs = self._get_worksheet_recommendation_attributes(worksheet, column_indices)
 
             for profile in benchmark_profiles:
-                for recommend_id, title, description, assessment_method, is_header in worksheet_row_attrs:
+                for recommend_id, title, description, rationale, impact, assessment_method, is_header in worksheet_row_attrs:
                     if is_header:
                         header = RecommendHeader(header_id=recommend_id,
+                                                 level=level,
                                                  title=title,
-                                                 description=description,
-                                                 level=level)
+                                                 description=description
+                                                 )
                         self._headers[profile].append({recommend_id: header})
-                        continue
-                    recommendation = Recommendation(recommend_id=recommend_id,
-                                                    title=title,
-                                                    description=description,
-                                                    assessment_method=assessment_method,
-                                                    level=level)
-                    self._cache[profile].append({recommend_id: recommendation})
+                    else:
+                        recommendation = Recommendation(recommend_id=recommend_id,
+                                                        level=level,
+                                                        title=title,
+                                                        rationale=rationale,
+                                                        impact=impact,
+                                                        assessment_method=assessment_method
+                                                        )
+                        self._cache[profile].append({recommend_id: recommendation})
 
     def get_item_by_id(self, *, scope_level: int = 1, item_id: str, item_type: str) -> Recommendation | RecommendHeader:
         scope_level = self._validate_and_return_scope_level(scope_level)
@@ -186,3 +193,8 @@ class WorkbookManager:
 
     def get_all_scopes_recommendation_headers(self) -> Dict[str, List[Dict[str, RecommendHeader]]]:
         return self._headers
+
+    def __repr__(self):
+        return f"WorkbookManager(workbook_path='{self._workbook_path}', workbook='{self._workbook}', " \
+               f"scope_levels='{self._scope_levels}', benchmark_profiles_rex='{self._benchmark_profiles_rex}', " \
+               f"scope_levels_os_mapping='{self._scope_levels_os_mapping}', benchmark_profiles='{self._benchmark_profiles}')"
