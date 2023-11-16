@@ -9,6 +9,9 @@ from typing import Dict, Tuple, Set, List, Iterator
 class WorkbookManager:
     _SCOPE_LEVELS = {1, 2}
     _BENCHMARK_PROFILES_REX = r'(Level\s(\d)\s-\s\w+ \d+\.\d{1,2}(?:\s\w+)*)'
+    _SECTION, _RECOMMENDATION, _TITLE, _ASSESS_STATS, _DESCR, _RATIONALE, _IMPACT = 'Section #', 'Recommendation #', 'Title', 'Assessment Status', \
+                                                                                    'Description', 'Rationale Statement', 'Impact Statement'
+    _COLUMN_TITLES = {_SECTION, _RECOMMENDATION, _TITLE, _ASSESS_STATS, _RATIONALE, _IMPACT}
 
     def __init__(self, workbook_path: str):
         self._workbook_path = self._validate_and_return_file_path(workbook_path)
@@ -41,8 +44,8 @@ class WorkbookManager:
     def path(self, new_path: str):
         self._workbook_path = self._validate_and_return_file_path(new_path)
         self._workbook = openpyxl.load_workbook(self._workbook_path)
-        self._scope_levels_os_mapping = self.scope_levels_os_mapping
-        self._benchmark_profiles = self.benchmark_profiles
+        self._scope_levels_os_mapping = self._populate_scope_levels_os_mapping()
+        self._benchmark_profiles = self._get_benchmark_profiles()
         self._cache = None
         self._headers = None
         self._populate_cache_and_headers()
@@ -56,6 +59,10 @@ class WorkbookManager:
         return self._scope_levels_os_mapping
 
     @classmethod
+    def section(cls):
+        return cls._SECTION
+
+    @classmethod
     def get_scope_levels(cls) -> Set:
         return cls._SCOPE_LEVELS
 
@@ -63,9 +70,14 @@ class WorkbookManager:
     def get_benchmark_profiles_rex(cls) -> str:
         return cls._BENCHMARK_PROFILES_REX
 
+    @classmethod
+    def get_column_titles(cls) -> Set:
+        return cls._COLUMN_TITLES
+
     def _get_benchmark_profiles(self) -> list:
         regex_pattern = self._benchmark_profiles_rex
-        overview_worksheet = self._workbook['Overview - Glossary']
+        sheet_name = self._validate_and_return_sheet_name('Overview - Glossary')
+        overview_worksheet = self._workbook[sheet_name]
         overview_paragraphs = str([paragraph for paragraph in overview_worksheet.iter_rows(values_only=True)])
         return re.findall(regex_pattern, overview_paragraphs)
 
@@ -80,7 +92,22 @@ class WorkbookManager:
                     scope_levels_os_mapping[profile_level].append(profile)
         return scope_levels_os_mapping
 
+    def _validate_and_return_sheet_name(self, sheet_name: str) -> str:
+        sheetnames_list = self._workbook.sheetnames
+        if sheet_name not in sheetnames_list:
+            raise ValueError(f'"{sheet_name}" is not in the sheet names. Possible sheet names: {sheetnames_list}.')
+        return sheet_name
+
+    def _validate_and_return_column_titles(self, column_indices: dict) -> bool:
+        required_columns = self.get_column_titles()
+        columns_to_check = column_indices.keys()
+        if not required_columns.issubset(columns_to_check):
+            missing_columns = required_columns.difference(columns_to_check)
+            raise AttributeError(f"The following columns do not exist in the worksheet: '{', '.join(missing_columns)}'.")
+        return True
+
     def _validate_and_return_benchmark_scope_profile(self, scope_level: int) -> str:
+        scope_level = self._validate_and_return_scope_level(scope_level)
         scope_level_os = self._scope_levels_os_mapping[scope_level]
         if not scope_level_os:
             raise ValueError(f'Benchmark profile for level {scope_level} does not exist.')
@@ -109,28 +136,30 @@ class WorkbookManager:
         return scope_items
 
     def _get_worksheet_scope_headers(self, scope_level: int) -> Tuple[Worksheet, Dict[str, int]]:
-        worksheet = self._workbook[f'Level {scope_level}']
+        scope_level = self._validate_and_return_scope_level(scope_level)
+        sheet_name = self._validate_and_return_sheet_name(f'Level {scope_level}')
+        worksheet = self._workbook[sheet_name]
         header_row = next(worksheet.iter_rows(min_row=1, max_row=1, values_only=True))
         column_indices = {title: index for index, title in enumerate(header_row)}
 
         return worksheet, column_indices
 
-    @staticmethod
-    def _get_worksheet_recommendation_attributes(worksheet: Worksheet, column_indices: Dict[str, int]) -> Iterator[Tuple[str, str, str, bool]]:
-        for row in worksheet.iter_rows(min_row=2, values_only=True):
-            recommend_id = row[column_indices['Recommendation #']]
-            title = row[column_indices['Title']]
-            description = row[column_indices['Description']]
-            rationale = row[column_indices['Rationale Statement']]
-            impact = row[column_indices['Impact Statement']]
-            assessment_method = row[column_indices['Assessment Status']]
-            is_header = False
+    def _get_worksheet_recommendation_attributes(self, worksheet: Worksheet, column_indices: Dict[str, int]) -> Iterator[Tuple[str, str, str, bool]]:
+        if self._validate_and_return_column_titles(column_indices):
+            for row in worksheet.iter_rows(min_row=2, values_only=True):
+                recommend_id = row[column_indices[WorkbookManager._RECOMMENDATION]]
+                title = row[column_indices[WorkbookManager._TITLE]]
+                description = row[column_indices[WorkbookManager._DESCR]]
+                rationale = row[column_indices[WorkbookManager._RATIONALE]]
+                impact = row[column_indices[WorkbookManager._IMPACT]]
+                assessment_method = row[column_indices[WorkbookManager._ASSESS_STATS]]
+                is_header = False
 
-            if not assessment_method:
-                is_header = True
-                recommend_id = row[column_indices['Section #']]
+                if not assessment_method:
+                    is_header = True
+                    recommend_id = row[column_indices[WorkbookManager._SECTION]]
 
-            yield recommend_id, title, description, rationale, impact, assessment_method, is_header
+                yield recommend_id, title, description, rationale, impact, assessment_method, is_header
 
     def _initialize_cache_and_headers_keys(self):
         cache_mapping = {}
