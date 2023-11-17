@@ -59,10 +59,6 @@ class WorkbookManager:
         return self._scope_levels_os_mapping
 
     @classmethod
-    def section(cls):
-        return cls._SECTION
-
-    @classmethod
     def get_scope_levels(cls) -> Set:
         return cls._SCOPE_LEVELS
 
@@ -144,7 +140,7 @@ class WorkbookManager:
 
         return worksheet, column_indices
 
-    def _get_worksheet_recommendation_attributes(self, worksheet: Worksheet, column_indices: Dict[str, int]) -> Iterator[Tuple[str, str, str, bool]]:
+    def _get_worksheet_row_attributes(self, worksheet: Worksheet, column_indices: Dict[str, int]) -> Iterator[Tuple[str, str, str, bool]]:
         if self._validate_and_return_column_titles(column_indices):
             for row in worksheet.iter_rows(min_row=2, values_only=True):
                 recommend_id = row[column_indices[WorkbookManager._RECOMMENDATION]]
@@ -161,39 +157,30 @@ class WorkbookManager:
 
                 yield recommend_id, title, description, rationale, impact, assessment_method, is_header
 
-    def _initialize_cache_and_headers_keys(self):
-        cache_mapping = {}
-        headers_mapping = {}
-        for level, benchmark_profiles in self._scope_levels_os_mapping.items():
+    def _get_worksheet_all_scopes_row_attributes(self):
+        all_scopes_mapping = self._scope_levels_os_mapping.items()
+        for level, benchmark_profiles in all_scopes_mapping:
+            worksheet, column_indices = self._get_worksheet_scope_headers(level)
+            worksheet_row_attrs = self._get_worksheet_row_attributes(worksheet, column_indices)
             for profile in benchmark_profiles:
-                cache_mapping[profile], headers_mapping[profile] = [], []
+                yield level, profile, worksheet_row_attrs
+
+    def _initialize_cache_and_headers_keys(self) -> Tuple[Dict[str, List], Dict[str, List]]:
+        cache_mapping = {profile: [] for _, benchmark_profiles in self._scope_levels_os_mapping.items() for profile in benchmark_profiles}
+        headers_mapping = {profile: [] for _, benchmark_profiles in self._scope_levels_os_mapping.items() for profile in benchmark_profiles}
         return cache_mapping, headers_mapping
 
     def _populate_cache_and_headers(self):
         self._cache, self._headers = self._initialize_cache_and_headers_keys()
-
-        for level, benchmark_profiles in self._scope_levels_os_mapping.items():
-            worksheet, column_indices = self._get_worksheet_scope_headers(level)
-            worksheet_row_attrs = self._get_worksheet_recommendation_attributes(worksheet, column_indices)
-
-            for profile in benchmark_profiles:
-                for recommend_id, title, description, rationale, impact, assessment_method, is_header in worksheet_row_attrs:
-                    if is_header:
-                        header = RecommendHeader(header_id=recommend_id,
-                                                 level=level,
-                                                 title=title,
-                                                 description=description
-                                                 )
-                        self._headers[profile].append({recommend_id: header})
-                    else:
-                        recommendation = Recommendation(recommend_id=recommend_id,
-                                                        level=level,
-                                                        title=title,
-                                                        rationale=rationale,
-                                                        impact=impact,
-                                                        assessment_method=assessment_method
-                                                        )
-                        self._cache[profile].append({recommend_id: recommendation})
+        all_scopes_attributes = self._get_worksheet_all_scopes_row_attributes()
+        for level, profile, worksheet_row_attrs in all_scopes_attributes:
+            for recommend_id, title, description, rationale, impact, assessment_method, is_header in worksheet_row_attrs:
+                if is_header:
+                    header = RecommendHeader(header_id=recommend_id, level=level, title=title, description=description)
+                    self._headers[profile].append({recommend_id: header})
+                else:
+                    recommendation = Recommendation(recommend_id=recommend_id, level=level, title=title, rationale=rationale, impact=impact, assessment_method=assessment_method)
+                    self._cache[profile].append({recommend_id: recommendation})
 
     def get_item_by_id(self, *, scope_level: int = 1, item_id: str, item_type: str) -> Recommendation | RecommendHeader:
         scope_level = self._validate_and_return_scope_level(scope_level)
