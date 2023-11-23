@@ -13,6 +13,7 @@ class Recommendation:
     title: str
     rationale: str
     impact: str
+    safeguard_id: str
     assessment_method: str
     audit_cmd: str = None
 

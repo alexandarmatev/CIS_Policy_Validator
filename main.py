@@ -1,8 +1,5 @@
 from WorkbookManager import WorkbookManager
 import openpyxl
-import re
-
-regex_pattern = r'(Level\s\d\s-\s\w+ \d+\.\d{1,2}(?:\s\w+)*)'
 
 # Path where the benchmark resides
 path = 'cis_benchmarks/CIS_Apple_macOS_14.0_Sonoma_Benchmark_v1.0.0.xlsx'
@@ -10,10 +7,8 @@ path = 'cis_benchmarks/CIS_Apple_macOS_14.0_Sonoma_Benchmark_v1.0.0.xlsx'
 # Creating a class instance of WorkbookManager
 workbook = WorkbookManager(path)
 
-print(workbook._initialize_cache_headers_keys())
-print(workbook.scope_levels_os_mapping)
-# print(workbook.get_all_scopes_recommendations())
-
+print(workbook.get_all_scopes_recommendations())
+print(workbook.get_all_scopes_recommendation_headers())
 
 # Test getter method of path
 print(workbook.path)
@@ -49,3 +44,5 @@ print(workbook.get_recommendations_scope_headers(scope_level=2))
 # Test get_all_recommendation_headers method
 print(workbook.get_all_scopes_recommendation_headers())
 
+# Test get recommendations by assessment method
+recommendations = workbook.get_recommendations_by_assessment_method(scope_level=1, assessment_method='automated')
