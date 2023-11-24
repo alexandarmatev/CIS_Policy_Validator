@@ -39,8 +39,9 @@ class RecommendHeader:
 @dataclass(kw_only=True, frozen=True)
 class CISControl:
     safeguard_id: str
+    asset_type: str
     domain: str
     title: str
     description: str
-    
+
 
