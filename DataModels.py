@@ -35,3 +35,12 @@ class RecommendHeader:
             attr_value = getattr(self, attr_name)
             _type_validator(attr_name, attr_value, attr_type)
 
+
+@dataclass(kw_only=True, frozen=True)
+class CISControl:
+    safeguard_id: str
+    domain: str
+    title: str
+    description: str
+    
+

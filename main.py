@@ -46,3 +46,6 @@ print(workbook.get_all_scopes_recommendation_headers())
 
 # Test get recommendations by assessment method
 recommendations = workbook.get_recommendations_by_assessment_method(scope_level=1, assessment_method='automated')
+
+for recommendation in recommendations:
+    print(recommendation)
