@@ -44,4 +44,9 @@ class CISControl:
     title: str
     description: str
 
+    def __post_init__(self):
+        for attr_name, attr_type in self.__annotations__.items():
+            attr_value = getattr(self, attr_name)
+            _type_validator(attr_name, attr_value, attr_type)
+
 
