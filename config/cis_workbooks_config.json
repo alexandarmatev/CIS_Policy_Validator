@@ -16,7 +16,7 @@
   },
   "CISControlManager": {
     "WORKSHEET_NAME": "Controls V8",
-    "CIS_SAFEGUARD": "CIS Safeguard",
+    "SAFEGUARD": "CIS Safeguard",
     "ASSET_TYPE": "Asset Type",
     "DOMAIN": "Security Function",
     "TITLE": "Title",

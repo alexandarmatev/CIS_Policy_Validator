@@ -9,24 +9,11 @@ from typing import Dict, Tuple, Set, List, Iterator, Generator
 class CISBenchmarkManager(ExcelWorkbookBase):
     def __init__(self, workbook_path: str, config_path: str):
         super().__init__(workbook_path, config_path)
-        self._config = self._load_config(config_path)[self.__class__.__name__]
         self._benchmark_profiles = self._get_benchmark_profiles()
         self._scope_levels_os_mapping = self._populate_scope_levels_os_mapping()
         self._cache = None
         self._headers = None
         self._populate_cache_and_headers()
-
-    @property
-    def config(self):
-        return self._config
-
-    @property
-    def config_path(self) -> str:
-        return self._config_path
-
-    @property
-    def workbook_path(self) -> str:
-        return self._workbook_path
 
     @property
     def benchmark_profiles(self) -> List[Tuple]:
@@ -38,55 +25,39 @@ class CISBenchmarkManager(ExcelWorkbookBase):
 
     @property
     def scope_levels(self) -> Dict:
-        return {int(level): title for level, title in self._config['SCOPE_LEVELS'].items()}
+        return {int(level): title for level, title in self.config['SCOPE_LEVELS'].items()}
 
     @property
     def allowed_assessment_methods(self) -> Set:
-        return self._config['ALLOWED_ASSESSMENT_METHODS']
+        return self.config['ALLOWED_ASSESSMENT_METHODS']
 
     @property
     def benchmark_profiles_rex(self) -> str:
-        return self._config['BENCHMARK_PROFILES_REX']
-
-    @property
-    def required_column_titles(self) -> Set:
-        return set(self._config['REQUIRED_COLUMN_TITLES'])
+        return self.config['BENCHMARK_PROFILES_REX']
 
     @property
     def recommendation(self) -> str:
         return self._config['RECOMMENDATION']
 
     @property
-    def title(self) -> str:
-        return self._config['TITLE']
-
-    @property
-    def description(self) -> str:
-        return self._config['DESCRIPTION']
-
-    @property
     def rationale(self) -> str:
-        return self._config['RATIONALE']
+        return self.config['RATIONALE']
 
     @property
     def impact(self) -> str:
-        return self._config['IMPACT']
-
-    @property
-    def safeguard(self) -> str:
-        return self._config['SAFEGUARD']
+        return self.config['IMPACT']
 
     @property
     def assess_status(self) -> str:
-        return self._config['ASSESS_STATUS']
+        return self.config['ASSESS_STATUS']
 
     @property
     def section(self) -> str:
-        return self._config['SECTION']
+        return self.config['SECTION']
 
     @property
     def overview_sheet(self) -> str:
-        return self._config['OVERVIEW_SHEET']
+        return self.config['OVERVIEW_SHEET']
 
     def _get_benchmark_profiles(self) -> list:
         regex_pattern = self.benchmark_profiles_rex

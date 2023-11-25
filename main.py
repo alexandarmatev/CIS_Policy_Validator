@@ -9,9 +9,10 @@ control_path = 'cis_controls/CIS_Controls_Version_8.xlsx'
 
 # Creating a class instance of WorkbookManager
 workbook = CISBenchmarkManager(workbook_path, config_path)
-#control = CISControlManager(control_path, config_path)
+control = CISControlManager(control_path, config_path)
 
 print(workbook.config)
+print(control.config)
 
 print(workbook.get_all_scopes_recommendations())
 print(workbook.get_all_scopes_recommendation_headers())
