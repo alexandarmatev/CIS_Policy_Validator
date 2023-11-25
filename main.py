@@ -1,20 +1,20 @@
-from WorkbookManager import WorkbookManager
-import openpyxl
+from CISBenchmarkManager import CISBenchmarkManager
+from CISControlManager import CISControlManager
 
 # Path where the benchmark resides
-path = 'cis_benchmarks/CIS_Apple_macOS_14.0_Sonoma_Benchmark_v1.0.0.xlsx'
+workbook_path = 'cis_benchmarks/CIS_Apple_macOS_14.0_Sonoma_Benchmark_v1.0.0.xlsx'
+config_path = 'config/cis_workbooks_config.json'
+
+control_path = 'cis_controls/CIS_Controls_Version_8.xlsx'
 
 # Creating a class instance of WorkbookManager
-workbook = WorkbookManager(path)
+workbook = CISBenchmarkManager(workbook_path, config_path)
+#control = CISControlManager(control_path, config_path)
+
+print(workbook.config)
 
 print(workbook.get_all_scopes_recommendations())
 print(workbook.get_all_scopes_recommendation_headers())
-
-# Test getter method of path
-print(workbook.path)
-
-# Test get_scope_levels class method
-print(workbook.get_scope_levels())
 
 # Test get_item_by_id method without providing a scope level (default scope level is 1)
 print(workbook.get_item_by_id(item_id='1.1', item_type='recommendation'))
@@ -49,3 +49,5 @@ recommendations = workbook.get_recommendations_by_assessment_method(scope_level=
 
 for recommendation in recommendations:
     print(recommendation)
+
+print(workbook)

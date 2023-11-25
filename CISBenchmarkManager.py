@@ -1,25 +1,15 @@
 from DataModels import Recommendation, RecommendHeader
 from ExcelWorkbookBase import ExcelWorkbookBase
-from utils.file_utils import validate_and_return_file_path
-import openpyxl
 import re
 from collections import defaultdict
 from openpyxl.worksheet.worksheet import Worksheet
 from typing import Dict, Tuple, Set, List, Iterator, Generator
 
 
-class WorkbookManager(ExcelWorkbookBase):
-    _SCOPE_LEVELS = {1: 'Level 1', 2: 'Level 2'}
-    _ALLOWED_ASSESSMENT_METHODS = {'manual', 'automated'}
-    _BENCHMARK_PROFILES_REX = r'(Level\s(\d)\s-\s\w+ \d+\.\d{1,2}(?:\s\w+)*)'
-    _SECTION, _RECOMMENDATION, _TITLE, _ASSESS_STATS, _DESCR, _RATIONALE, _IMPACT, _SAFEGUARD = 'Section #', 'Recommendation #', 'Title', 'Assessment Status', \
-                                                                                                'Description', 'Rationale Statement', 'Impact Statement', 'CIS Safeguards 1 (v8)'
-    _REQUIRED_COLUMN_TITLES = {_SECTION, _RECOMMENDATION, _TITLE, _ASSESS_STATS, _RATIONALE, _IMPACT, _SAFEGUARD}
-
-    def __init__(self, workbook_path: str):
-        super().__init__(workbook_path)
-        self._scope_levels = self.get_scope_levels()
-        self._benchmark_profiles_rex = self.get_benchmark_profiles_rex()
+class CISBenchmarkManager(ExcelWorkbookBase):
+    def __init__(self, workbook_path: str, config_path: str):
+        super().__init__(workbook_path, config_path)
+        self._config = self._load_config(config_path)[self.__class__.__name__]
         self._benchmark_profiles = self._get_benchmark_profiles()
         self._scope_levels_os_mapping = self._populate_scope_levels_os_mapping()
         self._cache = None
@@ -27,46 +17,80 @@ class WorkbookManager(ExcelWorkbookBase):
         self._populate_cache_and_headers()
 
     @property
-    def path(self) -> str:
-        return self._workbook_path
+    def config(self):
+        return self._config
 
-    @path.setter
-    def path(self, new_path: str):
-        self._workbook_path = validate_and_return_file_path(new_path)
-        self._workbook = openpyxl.load_workbook(self._workbook_path)
-        self._benchmark_profiles = self._get_benchmark_profiles()
-        self._scope_levels_os_mapping = self._populate_scope_levels_os_mapping()
-        self._cache = None
-        self._headers = None
-        self._populate_cache_and_headers()
+    @property
+    def config_path(self) -> str:
+        return self._config_path
+
+    @property
+    def workbook_path(self) -> str:
+        return self._workbook_path
 
     @property
     def benchmark_profiles(self) -> List[Tuple]:
-        return self._get_benchmark_profiles()
+        return self._benchmark_profiles
 
     @property
     def scope_levels_os_mapping(self) -> Dict:
         return self._scope_levels_os_mapping
 
-    @classmethod
-    def get_scope_levels(cls) -> Dict:
-        return cls._SCOPE_LEVELS
+    @property
+    def scope_levels(self) -> Dict:
+        return {int(level): title for level, title in self._config['SCOPE_LEVELS'].items()}
 
-    @classmethod
-    def get_allowed_assessment_methods(cls) -> Set:
-        return cls._ALLOWED_ASSESSMENT_METHODS
+    @property
+    def allowed_assessment_methods(self) -> Set:
+        return self._config['ALLOWED_ASSESSMENT_METHODS']
 
-    @classmethod
-    def get_benchmark_profiles_rex(cls) -> str:
-        return cls._BENCHMARK_PROFILES_REX
+    @property
+    def benchmark_profiles_rex(self) -> str:
+        return self._config['BENCHMARK_PROFILES_REX']
 
-    @classmethod
-    def get_required_column_titles(cls) -> Set:
-        return cls._REQUIRED_COLUMN_TITLES
+    @property
+    def required_column_titles(self) -> Set:
+        return set(self._config['REQUIRED_COLUMN_TITLES'])
+
+    @property
+    def recommendation(self) -> str:
+        return self._config['RECOMMENDATION']
+
+    @property
+    def title(self) -> str:
+        return self._config['TITLE']
+
+    @property
+    def description(self) -> str:
+        return self._config['DESCRIPTION']
+
+    @property
+    def rationale(self) -> str:
+        return self._config['RATIONALE']
+
+    @property
+    def impact(self) -> str:
+        return self._config['IMPACT']
+
+    @property
+    def safeguard(self) -> str:
+        return self._config['SAFEGUARD']
+
+    @property
+    def assess_status(self) -> str:
+        return self._config['ASSESS_STATUS']
+
+    @property
+    def section(self) -> str:
+        return self._config['SECTION']
+
+    @property
+    def overview_sheet(self) -> str:
+        return self._config['OVERVIEW_SHEET']
 
     def _get_benchmark_profiles(self) -> list:
-        regex_pattern = self._benchmark_profiles_rex
-        sheet_name = self._validate_and_return_sheet_name('Overview - Glossary')
+        regex_pattern = self.benchmark_profiles_rex
+        sheet_name = self._validate_and_return_sheet_name(self.overview_sheet)
         overview_worksheet = self._workbook[sheet_name]
         overview_paragraphs = str([paragraph for paragraph in overview_worksheet.iter_rows(values_only=True)])
         return re.findall(regex_pattern, overview_paragraphs)
@@ -88,7 +112,7 @@ class WorkbookManager(ExcelWorkbookBase):
     def _validate_and_return_scope_level(self, scope_level: int) -> int:
         if not isinstance(scope_level, int):
             raise TypeError(f'scope_level must be an integer, got {type(scope_level).__name__}')
-        if scope_level not in self._scope_levels:
+        if scope_level not in self.scope_levels:
             raise ValueError(f'{scope_level} is not in the scope levels.')
         return scope_level
 
@@ -104,20 +128,21 @@ class WorkbookManager(ExcelWorkbookBase):
         elif item_type.casefold() == 'recommend_header':
             scope_items = self.get_recommendations_scope_headers(scope_level=scope_level)
         else:
-            raise KeyError(f'Invalid item type "{item_type}" provided. Item types can be either "recommendation" or "recommend_header".')
+            raise KeyError(
+                f'Invalid item type "{item_type}" provided. Item types can be either "recommendation" or "recommend_header".')
         return scope_items
 
     def _validate_assessment_method_type(self, assessment_method: str) -> str:
-        allowed_assessment_methods = self.get_allowed_assessment_methods()
         if assessment_method is None:
             raise ValueError("Assessment method cannot be 'None'.")
-        if assessment_method.casefold() not in allowed_assessment_methods:
-            raise ValueError(f"{assessment_method} is not in allowed assessment methods. The allowed assessment methods are: '{allowed_assessment_methods}'.")
+        if assessment_method.casefold() not in self.allowed_assessment_methods:
+            raise ValueError(
+                f"{assessment_method} is not in allowed assessment methods. The allowed assessment methods are: '{self.allowed_assessment_methods}'.")
         return assessment_method
 
     def _get_worksheet_scope_headers(self, scope_level: int) -> Tuple[Worksheet, Dict[str, int]]:
         scope_level = self._validate_and_return_scope_level(scope_level)
-        curr_sheet_level = self._scope_levels[scope_level]
+        curr_sheet_level = self.scope_levels[scope_level]
         sheet_name = self._validate_and_return_sheet_name(curr_sheet_level)
         worksheet = self._workbook[sheet_name]
         header_row = next(worksheet.iter_rows(min_row=1, max_row=1, values_only=True))
@@ -126,21 +151,20 @@ class WorkbookManager(ExcelWorkbookBase):
         return worksheet, column_indices
 
     def _get_worksheet_row_attributes(self, worksheet: Worksheet, column_indices: Dict[str, int]) -> Iterator[Tuple[str, str, str, bool]]:
-        required_columns = self.get_required_column_titles()
-        if self._validate_column_titles(column_indices, required_columns):
+        if self._validate_column_titles(column_indices, self.required_column_titles):
             for row in worksheet.iter_rows(min_row=2, values_only=True):
-                recommend_id = row[column_indices[WorkbookManager._RECOMMENDATION]]
-                title = row[column_indices[WorkbookManager._TITLE]]
-                description = row[column_indices[WorkbookManager._DESCR]]
-                rationale = row[column_indices[WorkbookManager._RATIONALE]]
-                impact = row[column_indices[WorkbookManager._IMPACT]]
-                safeguard_id = row[column_indices[WorkbookManager._SAFEGUARD]]
-                assessment_method = row[column_indices[WorkbookManager._ASSESS_STATS]]
+                recommend_id = row[column_indices[self.recommendation]]
+                title = row[column_indices[self.title]]
+                description = row[column_indices[self.description]]
+                rationale = row[column_indices[self.rationale]]
+                impact = row[column_indices[self.impact]]
+                safeguard_id = row[column_indices[self.safeguard]]
+                assessment_method = row[column_indices[self.assess_status]]
                 is_header = False
 
                 if not assessment_method:
                     is_header = True
-                    recommend_id = row[column_indices[WorkbookManager._SECTION]]
+                    recommend_id = row[column_indices[self.section]]
 
                 yield recommend_id, title, description, rationale, impact, safeguard_id, assessment_method, is_header
 
@@ -170,8 +194,10 @@ class WorkbookManager(ExcelWorkbookBase):
                     header = RecommendHeader(header_id=recommend_id, level=level, title=title, description=description)
                     self._headers[profile].append({recommend_id: header})
                 else:
-                    recommendation = Recommendation(recommend_id=recommend_id, level=level, title=title, rationale=rationale,
-                                                    impact=impact, safeguard_id=safeguard_id, assessment_method=assessment_method)
+                    recommendation = Recommendation(recommend_id=recommend_id, level=level, title=title,
+                                                    rationale=rationale,
+                                                    impact=impact, safeguard_id=safeguard_id,
+                                                    assessment_method=assessment_method)
                     self._cache[profile].append({recommend_id: recommendation})
 
     def get_item_by_id(self, *, scope_level: int = 1, item_id: str, item_type: str) -> Recommendation | RecommendHeader:
@@ -210,6 +236,4 @@ class WorkbookManager(ExcelWorkbookBase):
                     yield recommendation
 
     def __repr__(self):
-        return f"WorkbookManager(workbook_path='{self._workbook_path}', workbook='{self._workbook}', " \
-               f"scope_levels='{self._scope_levels}', benchmark_profiles_rex='{self._benchmark_profiles_rex}', " \
-               f"scope_levels_os_mapping='{self._scope_levels_os_mapping}', benchmark_profiles='{self._benchmark_profiles}')"
+        return f'CISBenchmarkManager(workbook_path="{self.workbook_path}", config_path="{self.config_path}")'

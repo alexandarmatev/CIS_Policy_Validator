@@ -1,0 +1,26 @@
+{
+  "CISBenchmarkManager": {
+    "SCOPE_LEVELS": {"1":  "Level 1", "2":  "Level 2"},
+    "ALLOWED_ASSESSMENT_METHODS": ["manual", "automated"],
+    "BENCHMARK_PROFILES_REX": "(Level\\s(\\d)\\s-\\s\\w+ \\d+\\.\\d{1,2}(?:\\s\\w+)*)",
+    "SECTION": "Section #",
+    "RECOMMENDATION": "Recommendation #",
+    "TITLE": "Title",
+    "ASSESS_STATUS": "Assessment Status",
+    "DESCRIPTION": "Description",
+    "RATIONALE": "Rationale Statement",
+    "IMPACT": "Impact Statement",
+    "SAFEGUARD": "CIS Safeguards 1 (v8)",
+    "REQUIRED_COLUMN_TITLES": ["Section #", "Recommendation #", "Title", "Assessment Status", "Description", "Rationale Statement", "Impact Statement", "CIS Safeguards 1 (v8)"],
+    "OVERVIEW_SHEET": "Overview - Glossary"
+  },
+  "CISControlManager": {
+    "WORKSHEET_NAME": "Controls V8",
+    "CIS_SAFEGUARD": "CIS Safeguard",
+    "ASSET_TYPE": "Asset Type",
+    "DOMAIN": "Security Function",
+    "TITLE": "Title",
+    "DESCRIPTION": "Description",
+    "REQUIRED_COLUMN_TITLES": ["Controls V8", "CIS Safeguard", "Asset Type", "Security Function", "Title", "Description"]
+  }
+}

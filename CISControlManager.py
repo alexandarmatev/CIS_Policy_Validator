@@ -8,8 +8,8 @@ class CISControlManager(ExcelWorkbookBase):
     _CIS_SAFEGUARD, _ASSET_TYPE, _DOMAIN, _TITLE, _DESCRIPTION = 'CIS Safeguard', 'Asset Type', 'Security Function', 'Title', 'Description'
     _REQUIRED_COLUMN_TITLES = {_CIS_SAFEGUARD, _ASSET_TYPE, _DOMAIN, _TITLE, _DESCRIPTION}
 
-    def __init__(self, workbook_path: str):
-        super().__init__(workbook_path)
+    def __init__(self, workbook_path: str, config_path: str):
+        super().__init__(workbook_path, config_path)
 
     @classmethod
     def get_worksheet_name(cls) -> str:
@@ -42,7 +42,4 @@ class CISControlManager(ExcelWorkbookBase):
                     yield title, description, is_family
                 else:
                     yield safeguard_id, asset_type, domain, title, description, is_family
-
-
-controls = CISControlManager('cis_controls/CIS_Controls_Version_8.xlsx')
 
