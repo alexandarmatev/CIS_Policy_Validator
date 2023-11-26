@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from utils.file_utils import data_type_validator
+from utils.validation_utils import data_type_validator
 
 
 @dataclass(kw_only=True)
