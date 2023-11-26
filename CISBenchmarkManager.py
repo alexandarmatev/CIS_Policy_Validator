@@ -11,9 +11,8 @@ class CISBenchmarkManager(ExcelWorkbookBase):
         super().__init__(workbook_path, config_path)
         self._benchmark_profiles = self._get_benchmark_profiles()
         self._scope_levels_os_mapping = self._populate_scope_levels_os_mapping()
-        self._cache = None
         self._headers = None
-        self._populate_cache_and_headers()
+        self._populate_benchmark_cache_and_headers()
 
     @property
     def benchmark_profiles(self) -> List[Tuple]:
@@ -156,7 +155,7 @@ class CISBenchmarkManager(ExcelWorkbookBase):
                 headers_mapping[profile] = []
         return cache_mapping, headers_mapping
 
-    def _populate_cache_and_headers(self):
+    def _populate_benchmark_cache_and_headers(self):
         self._cache, self._headers = self._initialize_cache_and_headers_keys()
         all_scopes_attributes = self._get_worksheet_all_scopes_row_attributes()
         for level, profile, worksheet_row_attrs in all_scopes_attributes:

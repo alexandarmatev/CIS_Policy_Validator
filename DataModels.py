@@ -1,9 +1,5 @@
 from dataclasses import dataclass
-
-
-def _type_validator(attr_name, attr_value, attr_type):
-    if attr_value and not isinstance(attr_value, attr_type):
-        raise TypeError(f'Provided argument "{attr_value}" to {attr_name} must be of type {attr_type.__name__}.')
+from utils.file_utils import data_type_validator
 
 
 @dataclass(kw_only=True)
@@ -20,7 +16,7 @@ class Recommendation:
     def __post_init__(self):
         for attr_name, attr_type in self.__annotations__.items():
             attr_value = getattr(self, attr_name)
-            _type_validator(attr_name, attr_value, attr_type)
+            data_type_validator(attr_name, attr_value, attr_type)
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -33,7 +29,7 @@ class RecommendHeader:
     def __post_init__(self):
         for attr_name, attr_type in self.__annotations__.items():
             attr_value = getattr(self, attr_name)
-            _type_validator(attr_name, attr_value, attr_type)
+            data_type_validator(attr_name, attr_value, attr_type)
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -47,6 +43,18 @@ class CISControl:
     def __post_init__(self):
         for attr_name, attr_type in self.__annotations__.items():
             attr_value = getattr(self, attr_name)
-            _type_validator(attr_name, attr_value, attr_type)
+            data_type_validator(attr_name, attr_value, attr_type)
+
+
+@dataclass(kw_only=True, frozen=True)
+class CISControlFamily:
+    title: str
+    description: str
+
+    def __post_init__(self):
+        for attr_name, attr_type in self.__annotations__.items():
+            attr_value = getattr(self, attr_name)
+            data_type_validator(attr_name, attr_value, attr_type)
+
 
 

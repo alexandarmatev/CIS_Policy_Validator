@@ -11,6 +11,8 @@ control_path = 'cis_controls/CIS_Controls_Version_8.xlsx'
 workbook = CISBenchmarkManager(workbook_path, config_path)
 control = CISControlManager(control_path, config_path)
 
+print(control.get_all_controls())
+
 print(workbook.config)
 print(control.config)
 

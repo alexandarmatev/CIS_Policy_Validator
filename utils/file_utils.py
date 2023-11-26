@@ -19,3 +19,8 @@ def validate_and_return_file_path(path: str, extension: str) -> str:
         if not path.casefold().endswith('.json'):
             raise ValueError(f'The file at path {path} is not a valid json file.')
     return path
+
+
+def data_type_validator(attr_name, attr_value, attr_type):
+    if attr_value and not isinstance(attr_value, attr_type):
+        raise TypeError(f'Provided argument "{attr_value}" to {attr_name} must be of type {attr_type.__name__}.')

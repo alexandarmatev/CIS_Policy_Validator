@@ -10,6 +10,7 @@ class ExcelWorkbookBase:
         self._workbook = openpyxl.load_workbook(self._workbook_path)
         self._config_path = self._validate_and_return_file_path(config_path, 'json')
         self._config = self._load_config(config_path)[self.__class__.__name__]
+        self._cache = {}
 
     @staticmethod
     def _validate_and_return_file_path(path: str, extension: str) -> str:
