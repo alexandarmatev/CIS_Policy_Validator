@@ -24,3 +24,12 @@ def validate_and_return_file_path(path: str, extension: str) -> str:
 def data_type_validator(attr_name, attr_value, attr_type):
     if attr_value and not isinstance(attr_value, attr_type):
         raise TypeError(f'Provided argument "{attr_value}" to {attr_name} must be of type {attr_type.__name__}.')
+
+
+def cmd_output_validate_and_return(cmd_result):
+    output_code = cmd_result.returncode
+    if output_code != 0:
+        cmd_stderr = cmd_result.stderr.decode('UTF-8').strip()
+        raise RuntimeError(f"Command failed with error: '{cmd_stderr}'")
+    return cmd_result.stdout.decode('UTF-8').split('\n')
+

@@ -1,7 +1,7 @@
 from utils.validation_utils import validate_and_return_file_path
+from utils.config_load_utils import load_config
 import openpyxl
 from typing import Set
-import json
 
 
 class ExcelWorkbookBase:
@@ -9,23 +9,15 @@ class ExcelWorkbookBase:
         self._workbook_path = self._validate_and_return_file_path(workbook_path, 'xlsx')
         self._workbook = openpyxl.load_workbook(self._workbook_path)
         self._config_path = self._validate_and_return_file_path(config_path, 'json')
-        self._config = self._load_config(config_path)[self.__class__.__name__]
+        self._config = load_config(config_path)[self.__class__.__name__]
         self._cache = {}
 
     @staticmethod
     def _validate_and_return_file_path(path: str, extension: str) -> str:
         return validate_and_return_file_path(path, extension)
 
-    @staticmethod
-    def _load_config(config_path: str):
-        try:
-            with open(config_path, 'r') as config_file:
-                return json.load(config_file)
-        except json.JSONDecodeError as e:
-            raise ValueError(f'Error parsing JSON file at {config_path}: {e}')
-
     @property
-    def config(self):
+    def config(self) -> dict:
         return self._config
 
     @property

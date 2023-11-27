@@ -23,5 +23,10 @@
     "TITLE": "Title",
     "DESCRIPTION": "Description",
     "REQUIRED_COLUMN_TITLES": ["CIS Control", "CIS Safeguard", "Asset Type", "Security Function", "Title", "Description"]
+  },
+  "AuditCommands": {
+    "OS_VERSION_REX": "ProductVersion:\\s\\s(\\d+)",
+    "OS_MAPPING": {"13": "MacOS Ventura", "14":  "MacOS Sonoma"},
+    "ALLOWED_OS_VERSIONS": ["MacOS Ventura", "MacOS Sonoma"]
   }
 }
