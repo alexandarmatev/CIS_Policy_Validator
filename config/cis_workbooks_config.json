@@ -26,7 +26,7 @@
   },
   "AuditCommands": {
     "OS_VERSION_REX": "ProductVersion:\\s\\s(\\d+)",
-    "OS_MAPPING": {"13": "MacOS Ventura", "14":  "MacOS Sonoma"},
+    "OS_MAPPING": {"10": "X", "11": "Big Sur", "12": "Monterey", "13": "MacOS Ventura", "14":  "MacOS Sonoma"},
     "ALLOWED_OS_VERSIONS": ["MacOS Ventura", "MacOS Sonoma"]
   }
 }

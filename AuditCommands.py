@@ -1,5 +1,6 @@
-from utils.validation_utils import validate_and_return_file_path, cmd_output_validate_and_return
+from utils.validation_utils import validate_and_return_file_path
 from utils.config_load_utils import load_config
+from DataModels import AuditCommand
 import subprocess
 import re
 
@@ -8,7 +9,7 @@ class AuditCommands:
     def __init__(self, config_path):
         self._config_path = validate_and_return_file_path(config_path, 'json')
         self._config = load_config(config_path)[self.__class__.__name__]
-        self._all_commands = {'MacOS Ventura': [], 'MacOS Sonoma': []}
+        self._all_audit_commands = []
 
     @property
     def config(self) -> dict:
@@ -30,29 +31,41 @@ class AuditCommands:
     def allowed_os_versions(self) -> list:
         return self.config['ALLOWED_OS_VERSIONS']
 
+    @property
+    def all_audit_commands(self) -> list[AuditCommand]:
+        return self._all_audit_commands
+
+    @staticmethod
+    def _shell_exec(command: list[str]):
+        audit_cmd = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout = audit_cmd.stdout.decode('UTF-8').split('\n')
+        stderr = audit_cmd.stderr.decode('UTF-8').split('\n')
+        return_code = audit_cmd.returncode
+        return stdout, stderr, return_code
+
     def get_current_os_version(self) -> str:
         try:
-            cmd_result = subprocess.run('sw_vers', stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-            cmd_stdout = cmd_output_validate_and_return(cmd_result)[1]
-            match = re.findall(self.os_version_rex, cmd_stdout)
+            stdout, stderr, return_code = self._shell_exec(['sw_vers'])
+            if return_code != 0:
+                return stderr[0]
 
+            match = re.findall(self.os_version_rex, stdout[1])
             if not match:
                 raise ValueError(f"OS version regex match failed. Regex pattern: '{self.os_version_rex}'")
 
             rex_os = match[0]
             os_version = self.os_mapping[rex_os]
-
-            if os_version not in self.allowed_os_versions:
-                raise ValueError(f"{os_version} cannot be audited. Auditable OS versions are: {', '.join(self.allowed_os_versions)}")
-
             return os_version
 
         except (RuntimeError, ValueError, IndexError, KeyError) as error:
             print(f"Error occurred: '{error}'.")
 
+    def _ensure_all_apple_software_is_current(self):
+        stdout, stderr, return_code = self._shell_exec(['/usr/bin/sudo', '/usr/sbin/softwareupdate', '-l'])
+        if return_code != 0:
+            return stderr[0]
+        return stdout
 
-audit = AuditCommands('config/cis_workbooks_config.json')
-print(audit.config)
-print(audit.os_version_rex)
-print(audit.os_mapping)
-print(audit.get_current_os_version())
+    def _add_cmd(self):
+        audit_cmd = AuditCommand(safeguard_id='1.1', function=self._ensure_all_apple_software_is_current, cmd_output=None)
+        self._all_audit_commands.append(audit_cmd)
