@@ -1,4 +1,9 @@
 {
+  "General Configurations":
+  {
+    "COMMANDS_JSON_PATH": "config/audit_commands.json",
+    "CIS_CONTROLS_PATH": "cis_controls/CIS_Controls_Version_8.xlsx"
+  },
   "CISBenchmarkManager": {
     "SCOPE_LEVELS": {"1":  "Level 1", "2":  "Level 2"},
     "ALLOWED_ASSESSMENT_METHODS": ["manual", "automated"],
@@ -24,7 +29,7 @@
     "DESCRIPTION": "Description",
     "REQUIRED_COLUMN_TITLES": ["CIS Control", "CIS Safeguard", "Asset Type", "Security Function", "Title", "Description"]
   },
-  "AuditCommands": {
+  "AuditCommandsManager": {
     "OS_VERSION_REX": "ProductVersion:\\s\\s(\\d+)",
     "OS_MAPPING": {"10": "X", "11": "Big Sur", "12": "Monterey", "13": "MacOS Ventura", "14":  "MacOS Sonoma"},
     "ALLOWED_OS_VERSIONS": ["MacOS Ventura", "MacOS Sonoma"]

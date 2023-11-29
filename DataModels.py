@@ -1,6 +1,4 @@
 from dataclasses import dataclass
-from typing import Callable
-
 from utils.validation_utils import data_type_validator
 
 
@@ -57,14 +55,6 @@ class CISControlFamily:
         for attr_name, attr_type in self.__annotations__.items():
             attr_value = getattr(self, attr_name)
             data_type_validator(attr_name, attr_value, attr_type)
-
-
-@dataclass(kw_only=True)
-class AuditCommand:
-    safeguard_id: str
-    function: Callable
-    cmd_output: None
-
 
 
 

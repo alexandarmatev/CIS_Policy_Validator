@@ -26,10 +26,18 @@ def data_type_validator(attr_name, attr_value, attr_type):
         raise TypeError(f'Provided argument "{attr_value}" to {attr_name} must be of type {attr_type.__name__}.')
 
 
-def cmd_output_validate_and_return(cmd_result):
-    output_code = cmd_result.returncode
-    if output_code != 0:
-        cmd_stderr = cmd_result.stderr.decode('UTF-8').strip()
-        raise RuntimeError(f"Command failed with error: '{cmd_stderr}'")
-    return cmd_result.stdout.decode('UTF-8').split('\n')
+def validate_and_return_os_version(os_version, allowed_versions):
+    if os_version not in allowed_versions:
+        raise ValueError(
+            f"Mac OS {os_version} cannot be audited. Auditable OS versions are: {', '.join(allowed_versions)}")
+    return os_version
 
+
+def validate_and_return_workbook_version_path(os_version):
+    if os_version == 'MacOS Ventura':
+        workbook_version_path = 'cis_benchmarks/CIS_Apple_macOS_13.0_Ventura_Benchmark_v2.0.0.xlsx'
+    elif os_version == 'MacOS Sonoma':
+        workbook_version_path = 'cis_benchmarks/CIS_Apple_macOS_13.0_Ventura_Benchmark_v2.0.0.xlsx'
+    else:
+        raise ValueError(f'OS version path for {os_version} does not exist.')
+    return workbook_version_path

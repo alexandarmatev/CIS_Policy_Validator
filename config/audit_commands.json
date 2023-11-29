@@ -1,0 +1,37 @@
+{
+  "MacOS Ventura": [
+    {
+      "recommend_id": "1.1",
+      "description": "Ensure all Apple software is current",
+      "command": "/usr/bin/sudo /usr/sbin/softwareupdate -l",
+      "expected_output": "No new software available."
+    },
+    {
+      "recommend_id": "1.3",
+      "description": "Ensure Download New Updates When Available Is Enabled",
+      "command": " /usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.SoftwareUpdate')\\\n.objectForKey('AutomaticDownload').js\nEOS",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "1.4",
+      "description": "Ensure install of MacOS Updates is Enabled",
+      "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.SoftwareUpdate')\\\n.objectForKey('AutomaticallyInstallMacOSUpdates').js\nEOS",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "1.5",
+      "description": "Ensure Install Application Updates from the App Store Is Enabled",
+      "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << 'EOS'\nfunction run() {\n let pref1 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.commerce')\n .objectForKey('AutoUpdate'));\n let pref2 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.SoftwareUpdate')\n .objectForKey('AutomaticallyInstallAppUpdates'));\n if ( pref1 == 1 || pref2 == 1 ) {\n   return('true');\n } else {\n   return('false');\n }\n}\nEOS",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "1.6",
+      "description": "Ensure Install Security Responses and System Files Is Enabled",
+      "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\nfunction run() {\n let pref1 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.SoftwareUpdate')\\\n .objectForKey('ConfigDataInstall'))\n let pref2 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.SoftwareUpdate')\\\n .objectForKey('CriticalUpdateInstall'))\n if ( pref1 == 1 && pref2 == 1 ) {\n return(\"true\")\n } else {\n return(\"false\")\n }\n}\nEOS",
+      "expected_output": "true"
+    }
+  ],
+  "MacOS Sonoma": [
+    {}
+  ]
+}
