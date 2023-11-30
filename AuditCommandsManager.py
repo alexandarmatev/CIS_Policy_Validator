@@ -6,11 +6,14 @@ import re
 
 
 class AuditCommandsManager:
-    def __init__(self, config_path, commands_path):
+    def __init__(self, config_path, commands_path, *, os_version=None):
         self._config_path = validate_and_return_file_path(config_path, 'json')
         self._commands_path = commands_path
         self._config = load_config(config_path)[self.__class__.__name__]
-        self._os_version = validate_and_return_os_version(self._get_current_os_version(), self.allowed_os_versions)
+        if os_version is None:
+            self._os_version = validate_and_return_os_version(self._get_current_os_version(), self.allowed_os_versions)
+        else:
+            self._os_version = validate_and_return_os_version(os_version, self.allowed_os_versions)
         self._workbook_version_path = validate_and_return_workbook_version_path(self.os_version)
         self._audit_commands = load_config(commands_path)[self.os_version]
 
@@ -52,7 +55,7 @@ class AuditCommandsManager:
 
     def _get_current_os_version(self) -> str:
         try:
-            stdout, stderr, return_code = self._shell_exec(['sw_vers'])
+            stdout, stderr, return_code = self._shell_exec('sw_vers')
             if return_code != 0:
                 return stderr[0]
 
@@ -69,7 +72,7 @@ class AuditCommandsManager:
             print(f"Error occurred: '{error}'.")
 
     @staticmethod
-    def _shell_exec(command: list[str]):
+    def _shell_exec(command: str):
         audit_cmd = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         stdout = audit_cmd.stdout.decode('UTF-8').split('\n')
         stderr = audit_cmd.stderr.decode('UTF-8').split('\n')
@@ -88,12 +91,25 @@ class AuditCommandsManager:
         for audit_command in self.audit_commands:
             recommend_id, description, command, expected_output = self._get_command_attrs(audit_command)
             stdout, stderr, return_code = self._shell_exec(command)
-            if return_code != 0:
+            stdout = [output.strip() for output in stdout if output]
+
+            if return_code != 0 and stderr[0]:
                 print(stderr[0])
             if expected_output in stdout:
-                print('Compliant')
+                print(f'{description}: Compliant')
             else:
-                print('Not Compliant')
+                print(f'{description}: Not Compliant')
+    #
+    # def run_command(self, audit_command):
+    #     recommend_id, description, command, expected_output = self._get_command_attrs(audit_command)
+    #     stdout, stderr, return_code = self._shell_exec(command)
+    #     if return_code != 0:
+    #         print(stderr[0])
+    #     if expected_output in stdout:
+    #         print('Compliant')
+    #     else:
+    #         print('Not Compliant')
+
 
 
 

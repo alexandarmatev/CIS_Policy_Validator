@@ -2,36 +2,97 @@
   "MacOS Ventura": [
     {
       "recommend_id": "1.1",
-      "description": "Ensure all Apple software is current",
+      "description": "Ensure All Apple-provided Software Is Current",
       "command": "/usr/bin/sudo /usr/sbin/softwareupdate -l",
       "expected_output": "No new software available."
     },
     {
+      "recommend_id": "1.2",
+      "description": "Ensure Auto Update Is Enabled",
+      "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.SoftwareUpdate')\n.objectForKey('AutomaticCheckEnabled').js\nEOS",
+      "expected_output": "true"
+    },
+    {
       "recommend_id": "1.3",
       "description": "Ensure Download New Updates When Available Is Enabled",
-      "command": " /usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.SoftwareUpdate')\\\n.objectForKey('AutomaticDownload').js\nEOS",
+      "command": " /usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.SoftwareUpdate')\n.objectForKey('AutomaticDownload').js\nEOS",
       "expected_output": "true"
     },
     {
       "recommend_id": "1.4",
       "description": "Ensure install of MacOS Updates is Enabled",
-      "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.SoftwareUpdate')\\\n.objectForKey('AutomaticallyInstallMacOSUpdates').js\nEOS",
+      "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.SoftwareUpdate')\n.objectForKey('AutomaticallyInstallMacOSUpdates').js\nEOS",
       "expected_output": "true"
     },
     {
       "recommend_id": "1.5",
       "description": "Ensure Install Application Updates from the App Store Is Enabled",
-      "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << 'EOS'\nfunction run() {\n let pref1 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.commerce')\n .objectForKey('AutoUpdate'));\n let pref2 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.SoftwareUpdate')\n .objectForKey('AutomaticallyInstallAppUpdates'));\n if ( pref1 == 1 || pref2 == 1 ) {\n   return('true');\n } else {\n   return('false');\n }\n}\nEOS",
+      "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << 'EOS'\nfunction run() {\n let pref1 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.commerce')\n .objectForKey('AutoUpdate'));\n let pref2 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.SoftwareUpdate')\n .objectForKey('AutomaticallyInstallAppUpdates'));\n if ( pref1 == 1 || pref2 == 1 ) {\nreturn('true');\n} else {\nreturn('false');\n}\n}\nEOS",
       "expected_output": "true"
     },
     {
       "recommend_id": "1.6",
       "description": "Ensure Install Security Responses and System Files Is Enabled",
-      "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\nfunction run() {\n let pref1 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.SoftwareUpdate')\\\n .objectForKey('ConfigDataInstall'))\n let pref2 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.SoftwareUpdate')\\\n .objectForKey('CriticalUpdateInstall'))\n if ( pref1 == 1 && pref2 == 1 ) {\n return(\"true\")\n } else {\n return(\"false\")\n }\n}\nEOS",
+      "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\nfunction run() {\n let pref1 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.SoftwareUpdate')\\\n .objectForKey('ConfigDataInstall'))\n let pref2 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.SoftwareUpdate')\n .objectForKey('CriticalUpdateInstall'))\n if ( pref1 == 1 && pref2 == 1 ) {\nreturn(\"true\")\n} else {\n return(\"false\")\n }\n}\nEOS",
       "expected_output": "true"
+    },
+    {
+      "recommend_id": "1.7",
+      "description": "Ensure Software Update Deferment Is Less Than or Equal to 30 Days",
+      "command": "result=$(/usr/bin/sudo /usr/bin/osascript -l JavaScript << 'EOS'\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.applicationaccess')\n .objectForKey('enforcedSoftwareUpdateDelay').js\nEOS\n)\n\nif [ -z \"$result\" ]; then\necho \"true\"\nelif [ \"$result\" -le 30 ]; then\necho \"true\"\nelse\necho \"false\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "1.8",
+      "description": "Ensure the System is Managed by a Mobile Device Management (MDM) Software",
+      "command": "sudo /usr/bin/profiles status -type enrollment | /usr/bin/awk -F: '/MDM enrollment/ {print $2}' | /usr/bin/grep -c \"Yes (User Approved)\"",
+      "expected_output": "1"
+    },
+    {
+      "recommend_id": "2.2.1",
+      "description": "Ensure Firewall Is Enabled",
+      "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\nfunction run() {\napp = Application.currentApplication()\napp.includeStandardAdditions = true;\n\n let pref1 = app.doShellScript('/usr/bin/defaults read /Library/Preferences/com.apple.alf globalstate')\n let pref2 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.security.firewall')\n .objectForKey('EnableFirewall'))\n\n if ( ( ( pref1 == 1 ) || ( pref1 == 2 ) || ( pref2 == \"true\" ) ) && (pref1 != 0 ) ) {\n return(\"true\")\n } else {\n return(\"false\")\n }\n\n}\nEOS",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "2.2.2",
+      "description": "Ensure Firewall Stealth Mode Is Enabled",
+      "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\nfunction run() {\nlet pref1 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.alf')\n .objectForKey('stealthenabled'))\n let pref2 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.security.firewall')\n .objectForKey('EnableStealthMode'))\n if ( ( pref1 == 1 ) || ( pref2 == \"true\" ) ) {\n return(\"true\")\n } else {\n return(\"false\")\n }\n}\nEOS",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "2.3.1.1",
+      "description": "Ensure AirDrop Is Disabled When Not Actively Transferring Files",
+      "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << 'EOS'\nfunction checkAirDrop() {\nlet userDefaults = $.NSUserDefaults.alloc.initWithSuiteName('com.apple.applicationaccess');\n let allowAirDrop = userDefaults.objectForKey('allowAirDrop');\n if (typeof allowAirDrop === 'undefined' || allowAirDrop === null || allowAirDrop.js !== true) {\nreturn 'false';\n} else {\nreturn 'true';\n}\n}\ncheckAirDrop();\nEOS",
+      "expected_output": "false"
+    },
+    {
+      "recommend_id": "2.3.1.2",
+      "description": "Ensure AirPlay Receiver Is Disabled",
+      "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << 'EOS'\nfunction checkAirPlayIncomingRequests() {\nlet userDefaults = $.NSUserDefaults.alloc.initWithSuiteName('com.apple.applicationaccess');\n let allowAirPlayIncomingRequests = userDefaults.objectForKey('allowAirPlayIncomingRequests');\n if (typeof allowAirPlayIncomingRequests === 'undefined' || allowAirPlayIncomingRequests === null || allowAirPlayIncomingRequests.js !== true) {\nreturn 'false';\n} else {\nreturn 'true';\n}\n}\ncheckAirPlayIncomingRequests();\nEOS",
+      "expected_output": "false"
+    },
+    {
+      "recommend_id": "2.3.2.1",
+      "description": "Ensure Set Time and Date Automatically Is Enabled",
+      "command": "/usr/bin/sudo /usr/sbin/systemsetup -getusingnetworktime",
+      "expected_output": "Network Time: On"
+    },
+    {
+      "recommend_id": "2.3.2.2",
+      "description": "Ensure Time Is Set Within Appropriate Limits",
+      "command": "/usr/bin/sudo /usr/sbin/systemsetup -getnetworktimeserver | awk '{print $4}' | xargs -I {} /usr/bin/sudo /usr/bin/sntp {} | awk '{if ($1 >= -270 && $1 <= 270) print \"true\"; else print \"false\"}'",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "2.3.3.1",
+      "description": "Ensure DVD or CD Sharing Is Disabled",
+      "command": "/usr/bin/sudo /bin/launchctl list | grep -c com.apple.ODSAgent",
+      "expected_output": "0"
     }
   ],
   "MacOS Sonoma": [
     {}
   ]
 }
+

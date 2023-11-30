@@ -37,7 +37,7 @@ def validate_and_return_workbook_version_path(os_version):
     if os_version == 'MacOS Ventura':
         workbook_version_path = 'cis_benchmarks/CIS_Apple_macOS_13.0_Ventura_Benchmark_v2.0.0.xlsx'
     elif os_version == 'MacOS Sonoma':
-        workbook_version_path = 'cis_benchmarks/CIS_Apple_macOS_13.0_Ventura_Benchmark_v2.0.0.xlsx'
+        workbook_version_path = 'cis_benchmarks/CIS_Apple_macOS_14.0_Sonoma_Benchmark_v1.0.0.xlsx'
     else:
         raise ValueError(f'OS version path for {os_version} does not exist.')
     return workbook_version_path
