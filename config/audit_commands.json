@@ -89,10 +89,99 @@
       "description": "Ensure DVD or CD Sharing Is Disabled",
       "command": "/usr/bin/sudo /bin/launchctl list | grep -c com.apple.ODSAgent",
       "expected_output": "0"
+    },
+    {
+      "recommend_id": "2.3.3.2",
+      "description": "Ensure Screen Sharing Is Disabled",
+      "command": "/usr/bin/sudo /bin/launchctl list | grep -c com.apple.screensharing",
+      "expected_output": "0"
+    },
+    {
+      "recommend_id": "2.3.3.3",
+      "description": "Ensure File Sharing Is Disabled",
+      "command": "/usr/bin/sudo /bin/launchctl list | grep -c \"com.apple.smbd\"",
+      "expected_output": "0"
+    },
+    {
+      "recommend_id": "2.3.3.4",
+      "description": "Ensure Printer Sharing Is Disabled",
+      "command": "/usr/bin/sudo /usr/sbin/cupsctl | grep -c \"_share_printers=0\"",
+      "expected_output": "1"
+    },
+    {
+      "recommend_id": "2.3.3.5",
+      "description": "Ensure Remote Login Is Disabled",
+      "command": " /usr/bin/sudo /usr/sbin/systemsetup -getremotelogin",
+      "expected_output": "Remote Login: Off"
+    },
+    {
+      "recommend_id": "2.3.3.6",
+      "description": "Ensure Remote Management Is Disabled",
+      "command": "if /usr/bin/sudo /bin/ps -ef | /usr/bin/grep -e ARDAgent | grep -v grep > /dev/null; then\necho \"false\"\nelse\necho \"true\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "2.3.3.7",
+      "description": "Ensure Remote Apple Events Is Disabled",
+      "command": "/usr/bin/sudo /usr/sbin/systemsetup -getremoteappleevents",
+      "expected_output": "Remote Apple Events: Off"
+    },
+    {
+      "recommend_id": "2.3.3.8",
+      "description": "Ensure Internet Sharing Is Disabled",
+      "command": "output=$(/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.MCX')\n.objectForKey('forceInternetSharingOff').js\nEOS\n)\n\nif [ -z \"$output\" ]; then\nenabledOutput=$(/usr/bin/sudo /usr/bin/defaults read /Library/Preferences/SystemConfiguration/com.apple.nat | awk '/Enabled/ {i++; if(i==2) print; }')\n\nif [[ $enabledOutput =~ \"Enabled = 1\" ]]; then\necho \"false\"\nelif [[ $enabledOutput =~ \"Enabled = 0\" ]]; then\necho \"true\"\nfi\nelse\n  echo \"$output\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "2.3.3.11",
+      "description": "Ensure Bluetooth Sharing Is Disabled",
+      "command": "output=$(/usr/bin/sudo -u $(whoami) /usr/bin/defaults -currentHost read com.apple.Bluetooth PrefKeyServicesEnabled 2>/dev/null)\n\nif [ -z \"$output\" ]; then\necho \"true\"\nelif [[ \"$output\" == \"0\" ]]; then\necho \"true\"\nelif [[ \"$output\" == \"1\" ]]; then\necho \"false\"\nelse\necho \"true\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "2.3.4.2",
+      "description": "Ensure Time Machine Volumes Are Encrypted If Time Machine Is Enabled",
+      "command": "/usr/bin/sudo /usr/bin/defaults read /Library/Preferences/com.apple.TimeMachine.plist | grep -c NotEncrypted",
+      "expected_output": "0"
+    },
+    {
+      "recommend_id": "2.4.1",
+      "description": "Ensure Show Wi-Fi status in Menu Bar Is Enabled",
+      "command": "output=$(/usr/bin/sudo -u $(whoami) /usr/bin/defaults -currentHost read com.apple.controlcenter.plist WiFi 2>/dev/null)\n\nif [ -z \"$output\" ]; then\necho \"true\"\nelif [[ \"$output\" == \"2\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "2.4.2",
+      "description": "Ensure Show Bluetooth Status in Menu Bar Is Enabled",
+      "command": "output=$(/usr/bin/sudo -u $(whoami) /usr/bin/defaults -currentHost read com.apple.controlcenter.plist Bluetooth 2>/dev/null)\n\nif [ -z \"$output\" ]; then\necho \"true\"\nelif [[ \"$output\" == \"18\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "2.6.4",
+      "description": "Ensure Limit Ad Tracking Is Enabled",
+      "command": "output=$(/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.MCX')\n.objectForKey('forceInternetSharingOff').js\nEOS\n)\n\nif [ -z \"$output\" ]; then\nenabledOutput=$(/usr/bin/sudo -u $(whoami) /usr/bin/defaults read /Users/$(whoami)/Library/Preferences/com.apple.AdLib.plist allowApplePersonalizedAdvertising)\n\nif [[ $enabledOutput == \"0\" ]]; then\necho \"false\"\nelse\necho \"true\"\nfi\nelse\necho \"$output\"\nfi",
+      "expected_output": "false"
+    },
+     {
+      "recommend_id": "2.6.5",
+      "description": "Ensure Gatekeeper Is Enabled",
+      "command": "/usr/bin/sudo /usr/sbin/spctl --status",
+      "expected_output": "assessments enabled"
+    },
+    {
+      "recommend_id": "2.6.6",
+      "description": "Ensure FileVault Is Enabled",
+      "command": "/usr/bin/sudo /usr/bin/fdesetup status",
+      "expected_output": "FileVault is On."
+    },
+    {
+      "recommend_id": "2.6.8",
+      "description": "Ensure an Administrator Password Is Required to Access System-Wide Preferences",
+      "command": "authDBs=(\"system.preferences\" \"system.preferences.energysaver\"\n \"system.preferences.network\" \"system.preferences.printing\"\n \"system.preferences.sharing\" \"system.preferences.softwareupdate\"\n \"system.preferences.startupdisk\" \"system.preferences.timemachine\")\nresult=\"1\"\n\nfor section in \"${authDBs[@]}\"; do\nif [[ $(/usr/bin/sudo /usr/bin/security -q authorizationdb read \"$section\" | /usr/bin/xmllint -xpath 'name(//*[contains(text(), \"shared\")]/following-sibling::*[1])' -) != \"false\" ]]; then\nresult=\"0\"\nfi\ndone\n\necho $result\n",
+      "expected_output": "1"
     }
   ],
   "MacOS Sonoma": [
     {}
   ]
 }
-
