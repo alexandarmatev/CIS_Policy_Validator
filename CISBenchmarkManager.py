@@ -92,9 +92,9 @@ class CISBenchmarkManager(ExcelWorkbookBase):
             raise TypeError(f'item_id must be a string, got {type(item_id).__name__}')
         return item_id
 
-    def _validate_and_get_items_by_type(self, scope_level: int, item_type: str) -> List[Dict[str, Recommendation]] | List[Dict[str, RecommendHeader]]:
+    def _validate_and_get_items_by_type(self, scope_level: int, item_type: str) -> List[Recommendation] | List[RecommendHeader]:
         if item_type.casefold() == 'recommendation':
-            scope_items = self.get_recommendations_scope(scope_level=scope_level)
+            scope_items = self.get_recommendations_by_level(scope_level=scope_level)
         elif item_type.casefold() == 'recommend_header':
             scope_items = self.get_recommendations_scope_headers(scope_level=scope_level)
         else:
@@ -161,49 +161,48 @@ class CISBenchmarkManager(ExcelWorkbookBase):
         for level, profile, worksheet_row_attrs in all_scopes_attributes:
             for recommend_id, title, description, rationale, impact, safeguard_id, assessment_method, is_header in worksheet_row_attrs:
                 if is_header:
-                    header = RecommendHeader(header_id=recommend_id, level=level, title=title, description=description)
-                    self._headers[profile].append({recommend_id: header})
+                    header = RecommendHeader(recommend_id=recommend_id, level=level, title=title, description=description)
+                    self._headers[profile].append(header)
                 else:
                     recommendation = Recommendation(recommend_id=recommend_id, level=level, title=title,
                                                     rationale=rationale,
                                                     impact=impact, safeguard_id=safeguard_id,
                                                     assessment_method=assessment_method)
-                    self._cache[profile].append({recommend_id: recommendation})
+                    self._cache[profile].append(recommendation)
 
     def get_item_by_id(self, *, scope_level: int = 1, item_id: str, item_type: str) -> Recommendation | RecommendHeader:
         scope_level = self._validate_and_return_scope_level(scope_level)
         item_id = self._validate_and_return_item_id(item_id)
         scope_items = self._validate_and_get_items_by_type(scope_level, item_type)
 
-        for item_dict in scope_items:
-            if item_id in item_dict:
-                return item_dict[item_id]
+        for item in scope_items:
+            if item_id == item.recommend_id:
+                return item
 
         raise KeyError(f'{item_type.capitalize()} with ID {item_id} is not in level {scope_level} of {item_type}s.')
 
-    def get_recommendations_scope(self, *, scope_level: int = 1) -> List[Dict[str, Recommendation]]:
+    def get_recommendations_by_level(self, *, scope_level: int = 1) -> List[Recommendation]:
         scope_level = self._validate_and_return_scope_level(scope_level)
         scope_profile = self._validate_and_return_benchmark_scope_profile(scope_level)
         return self._cache[scope_profile]
 
-    def get_all_scopes_recommendations(self) -> Dict[str, List[Dict[str, Recommendation]]]:
+    def get_all_levels_recommendations(self) -> Dict[str, List[Dict[str, Recommendation]]]:
         return self._cache
 
-    def get_recommendations_scope_headers(self, *, scope_level: int = 1) -> List[Dict[str, RecommendHeader]]:
+    def get_recommendations_scope_headers(self, *, scope_level: int = 1) -> List[RecommendHeader]:
         scope_level = self._validate_and_return_scope_level(scope_level)
         scope_profile = self._validate_and_return_benchmark_scope_profile(scope_level)
         return self._headers[scope_profile]
 
-    def get_all_scopes_recommendation_headers(self) -> Dict[str, List[Dict[str, RecommendHeader]]]:
+    def get_all_scopes_recommendation_headers(self) -> Dict[str, List[RecommendHeader]]:
         return self._headers
 
     def get_recommendations_by_assessment_method(self, *, scope_level: int = 1, assessment_method: str = None) -> Generator:
         assessment_method = self._validate_assessment_method_type(assessment_method)
-        recommendations_scope = self.get_recommendations_scope(scope_level=scope_level)
-        for dict_ in recommendations_scope:
-            for id_, recommendation in dict_.items():
-                if assessment_method == recommendation.assessment_method.casefold():
-                    yield recommendation
+        recommendations_scope = self.get_recommendations_by_level(scope_level=scope_level)
+        for recommendation in recommendations_scope:
+            if assessment_method == recommendation.assessment_method.casefold():
+                yield recommendation
 
     def __repr__(self):
         return f'CISBenchmarkManager(workbook_path="{self.workbook_path}", config_path="{self.config_path}")'

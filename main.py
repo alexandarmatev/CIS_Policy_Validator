@@ -2,6 +2,7 @@ from CISBenchmarkManager import CISBenchmarkManager
 from CISControlManager import CISControlManager
 from AuditCommandsManager import AuditCommandsManager
 from utils.config_load_utils import load_config
+from DataModels import AuditCmd
 
 WORKBOOKS_CONFIG_PATH = 'config/cis_workbooks_config.json'
 general_config = load_config('config/cis_workbooks_config.json')['General Configurations']
@@ -9,15 +10,28 @@ COMMANDS_PATH = general_config['COMMANDS_JSON_PATH']
 CIS_CONTROLS_PATH = general_config['CIS_CONTROLS_PATH']
 
 audit = AuditCommandsManager(WORKBOOKS_CONFIG_PATH, COMMANDS_PATH)
-audit.run_commands()
+# audit.run_commands()
 
 workbook_path = audit.workbook_path
 
 # Creating a class instance of WorkbookManager
 workbook = CISBenchmarkManager(workbook_path, WORKBOOKS_CONFIG_PATH)
-# automated_audit_recommendations = workbook.get_recommendations_by_assessment_method(assessment_method='automated')
-# for recommendation in automated_audit_recommendations:
-#     print(recommendation)
+
+level_1_audit_recommendations = workbook.get_recommendations_by_level(scope_level=1)
+recommend_ids = [recommend.recommend_id for recommend in level_1_audit_recommendations]
+
+for audit_cmd in audit.audit_commands:
+    for recommendation in level_1_audit_recommendations:
+        if audit_cmd['recommend_id'] == recommendation.recommend_id:
+            recommendation.audit_cmd = AuditCmd(command=audit_cmd['command'], expected_output=audit_cmd['expected_output'])
+            continue
+
+for recommendation in level_1_audit_recommendations:
+    audit_cmd = recommendation.audit_cmd
+    if audit_cmd:
+        audit.run_command(audit_cmd.command, audit_cmd.expected_output)
+
+
 # control = CISControlManager(CIS_CONTROLS_PATH, WORKBOOKS_CONFIG_PATH)
 #
 # print(control.get_all_controls())
@@ -25,7 +39,7 @@ workbook = CISBenchmarkManager(workbook_path, WORKBOOKS_CONFIG_PATH)
 # print(workbook.config)
 # print(control.config)
 #
-# print(workbook.get_all_scopes_recommendations())
+# print(workbook.get_all_levels_recommendations())
 # print(workbook.get_all_scopes_recommendation_headers())
 #
 # # Test get_item_by_id method without providing a scope level (default scope level is 1)
@@ -39,13 +53,13 @@ workbook = CISBenchmarkManager(workbook_path, WORKBOOKS_CONFIG_PATH)
 # print(workbook.get_item_by_id(scope_level=2, item_id='2', item_type='recommend_header'))
 #
 # # Test get_scope_recommendations method without providing a scope level (default scope level is 1)
-# print(workbook.get_recommendations_scope())
+# print(workbook.get_recommendations_by_level())
 #
 # # Test get_scope_recommendations for scope level 2
-# print(workbook.get_recommendations_scope(scope_level=2))
+# print(workbook.get_recommendations_by_level(scope_level=2))
 #
 # # Test get_all_recommendations method
-# print(workbook.get_all_scopes_recommendations())
+# print(workbook.get_all_levels_recommendations())
 #
 # # Test get_recommendations_scope_headers method without providing a scope level (default scope level is 1)
 # print(workbook.get_recommendations_scope_headers())

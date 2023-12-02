@@ -99,16 +99,19 @@ class AuditCommandsManager:
                 print(f'{description}: Compliant')
             else:
                 print(f'{description}: Not Compliant')
-    #
-    # def run_command(self, audit_command):
-    #     recommend_id, description, command, expected_output = self._get_command_attrs(audit_command)
-    #     stdout, stderr, return_code = self._shell_exec(command)
-    #     if return_code != 0:
-    #         print(stderr[0])
-    #     if expected_output in stdout:
-    #         print('Compliant')
-    #     else:
-    #         print('Not Compliant')
+
+    def run_command(self, audit_cmd, expected_output):
+        # description, recommend_id, command, expected_output = self._get_command_attrs(audit_cmd)
+        stdout, stderr, return_code = self._shell_exec(audit_cmd)
+        stdout = [output.strip() for output in stdout if output]
+        if return_code != 0 and stderr[0]:
+            print(stderr[0])
+        if expected_output in stdout:
+            print('Compliant')
+        else:
+            print('Not Compliant')
+
+
 
 
 
