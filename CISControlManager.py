@@ -9,6 +9,7 @@ class CISControlManager(ExcelWorkbookBase):
     def __init__(self, workbook_path: str, config_path: str):
         super().__init__(workbook_path, config_path)
         self._control_families = {}
+        self._cache = {'All Controls': []}
         self._populate_controls_cache()
 
     @property
@@ -57,13 +58,17 @@ class CISControlManager(ExcelWorkbookBase):
         worksheet_row_attrs = self._get_worksheet_row_attributes(worksheet, column_indices)
         for row_data in worksheet_row_attrs:
             if row_data.is_family:
-                self._control_families[row_data.control_family_id] = CISControlFamily(title=row_data.title, description=row_data.description)
+                control_family_id = row_data.control_family_id.strip()
+                self._control_families[control_family_id] = CISControlFamily(title=row_data.title, description=row_data.description)
             else:
-                self._cache[row_data.safeguard_id] = CISControl(safeguard_id=row_data.safeguard_id, asset_type=row_data.asset_type,
-                                                                domain=row_data.domain, title=row_data.title, description=row_data.description)
+                self._cache['All Controls'].append(CISControl(safeguard_id=row_data.safeguard_id, asset_type=row_data.asset_type,
+                                                              domain=row_data.domain, title=row_data.title, description=row_data.description))
 
     def get_all_controls(self):
-        return self._cache
+        return self._cache['All Controls']
+
+    def get_all_control_families(self):
+        return self._control_families
 
     def __repr__(self):
         return f'CISControlManager(workbook_path="{self.workbook_path}", config_path="{self.config_path}")'

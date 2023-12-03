@@ -5,10 +5,10 @@ import subprocess
 import re
 
 
-class AuditCommandsManager:
-    def __init__(self, config_path, commands_path, *, os_version=None):
+class AuditCommandManager:
+    def __init__(self, config_path: str, commands_path: str, *, os_version: str = None):
         self._config_path = validate_and_return_file_path(config_path, 'json')
-        self._commands_path = commands_path
+        self._commands_path = validate_and_return_file_path(commands_path, 'json')
         self._config = load_config(config_path)[self.__class__.__name__]
         if os_version is None:
             self._os_version = validate_and_return_os_version(self._get_current_os_version(), self.allowed_os_versions)
@@ -35,7 +35,9 @@ class AuditCommandsManager:
 
     @property
     def audit_commands(self) -> List[Dict]:
-        return self._audit_commands
+        if len(self._audit_commands[0]) > 0:
+            return self._audit_commands
+        raise ValueError('Audit commands not found.')
 
     @property
     def os_version(self) -> str:
@@ -80,36 +82,32 @@ class AuditCommandsManager:
         return stdout, stderr, return_code
 
     @staticmethod
-    def _get_command_attrs(audit_command: dict) -> Tuple:
-        recommend_id = audit_command['recommend_id']
-        description = audit_command['description']
+    def get_command_attrs(audit_command: dict) -> Tuple:
         command = audit_command['command']
         expected_output = audit_command['expected_output']
-        return recommend_id, description, command, expected_output
+        return command, expected_output
 
-    def run_commands(self):
-        for audit_command in self.audit_commands:
-            recommend_id, description, command, expected_output = self._get_command_attrs(audit_command)
-            stdout, stderr, return_code = self._shell_exec(command)
-            stdout = [output.strip() for output in stdout if output]
-
-            if return_code != 0 and stderr[0]:
-                print(stderr[0])
-            if expected_output in stdout:
-                print(f'{description}: Compliant')
-            else:
-                print(f'{description}: Not Compliant')
-
-    def run_command(self, audit_cmd, expected_output):
-        # description, recommend_id, command, expected_output = self._get_command_attrs(audit_cmd)
+    def run_command(self, audit_cmd: str, expected_output: str) -> str | bool:
         stdout, stderr, return_code = self._shell_exec(audit_cmd)
         stdout = [output.strip() for output in stdout if output]
         if return_code != 0 and stderr[0]:
-            print(stderr[0])
-        if expected_output in stdout:
-            print('Compliant')
-        else:
-            print('Not Compliant')
+            return stderr[0]
+        return expected_output in stdout
+
+    # def run_commands(self):
+    #     for audit_command in self.audit_commands:
+    #         recommend_id, description, command, expected_output = self._get_command_attrs(audit_command)
+    #         stdout, stderr, return_code = self._shell_exec(command)
+    #         stdout = [output.strip() for output in stdout if output]
+    #
+    #         if return_code != 0 and stderr[0]:
+    #             print(stderr[0])
+    #         if expected_output in stdout:
+    #             print(f'{description}: Compliant')
+    #         else:
+    #             print(f'{description}: Not Compliant')
+    #
+
 
 
 

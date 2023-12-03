@@ -1,40 +1,23 @@
 from CISBenchmarkManager import CISBenchmarkManager
 from CISControlManager import CISControlManager
-from AuditCommandsManager import AuditCommandsManager
-from utils.config_load_utils import load_config
-from DataModels import AuditCmd
+from AuditCommandManager import AuditCommandManager
+from constants.constants import WORKBOOKS_CONFIG_PATH, COMMANDS_PATH, CIS_CONTROLS_PATH
 
-WORKBOOKS_CONFIG_PATH = 'config/cis_workbooks_config.json'
-general_config = load_config('config/cis_workbooks_config.json')['General Configurations']
-COMMANDS_PATH = general_config['COMMANDS_JSON_PATH']
-CIS_CONTROLS_PATH = general_config['CIS_CONTROLS_PATH']
-
-audit = AuditCommandsManager(WORKBOOKS_CONFIG_PATH, COMMANDS_PATH)
-# audit.run_commands()
+audit = AuditCommandManager(WORKBOOKS_CONFIG_PATH, COMMANDS_PATH)
 
 workbook_path = audit.workbook_path
-
-# Creating a class instance of WorkbookManager
 workbook = CISBenchmarkManager(workbook_path, WORKBOOKS_CONFIG_PATH)
 
-level_1_audit_recommendations = workbook.get_recommendations_by_level(scope_level=1)
-recommend_ids = [recommend.recommend_id for recommend in level_1_audit_recommendations]
+evaluated_recommendations = workbook.evaluate_recommendations_compliance(scope_level=1, os_version='MacOS Ventura')
 
-for audit_cmd in audit.audit_commands:
-    for recommendation in level_1_audit_recommendations:
-        if audit_cmd['recommend_id'] == recommendation.recommend_id:
-            recommendation.audit_cmd = AuditCmd(command=audit_cmd['command'], expected_output=audit_cmd['expected_output'])
-            continue
-
-for recommendation in level_1_audit_recommendations:
-    audit_cmd = recommendation.audit_cmd
-    if audit_cmd:
-        audit.run_command(audit_cmd.command, audit_cmd.expected_output)
+for recommendation in evaluated_recommendations:
+    print(f'{recommendation.title} - {recommendation.compliant}')
 
 
 # control = CISControlManager(CIS_CONTROLS_PATH, WORKBOOKS_CONFIG_PATH)
 #
 # print(control.get_all_controls())
+# print(control.get_all_control_families())
 #
 # print(workbook.config)
 # print(control.config)

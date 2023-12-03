@@ -1,5 +1,6 @@
-from DataModels import Recommendation, RecommendHeader
+from DataModels import Recommendation, RecommendHeader, AuditCmd
 from ExcelWorkbookBase import ExcelWorkbookBase
+from AuditCommandManager import AuditCommandManager
 import re
 from collections import defaultdict
 from openpyxl.worksheet.worksheet import Worksheet
@@ -57,6 +58,10 @@ class CISBenchmarkManager(ExcelWorkbookBase):
     @property
     def overview_sheet(self) -> str:
         return self.config['OVERVIEW_SHEET']
+
+    @property
+    def commands_json_path(self) -> str:
+        return self.config['COMMANDS_JSON_PATH']
 
     def _get_benchmark_profiles(self) -> list:
         regex_pattern = self.benchmark_profiles_rex
@@ -161,7 +166,8 @@ class CISBenchmarkManager(ExcelWorkbookBase):
         for level, profile, worksheet_row_attrs in all_scopes_attributes:
             for recommend_id, title, description, rationale, impact, safeguard_id, assessment_method, is_header in worksheet_row_attrs:
                 if is_header:
-                    header = RecommendHeader(recommend_id=recommend_id, level=level, title=title, description=description)
+                    header = RecommendHeader(recommend_id=recommend_id, level=level, title=title,
+                                             description=description)
                     self._headers[profile].append(header)
                 else:
                     recommendation = Recommendation(recommend_id=recommend_id, level=level, title=title,
@@ -204,5 +210,34 @@ class CISBenchmarkManager(ExcelWorkbookBase):
             if assessment_method == recommendation.assessment_method.casefold():
                 yield recommendation
 
+    def _map_recommendations_and_audit_commands(self, *, scope_level: int = 1, os_version: str = None) -> Tuple[AuditCommandManager, List[Recommendation]]:
+        audit = AuditCommandManager(config_path=self.config_path, commands_path=self.commands_json_path, os_version=os_version)
+        audit_commands = audit.audit_commands
+        commands_map = {cmd['recommend_id']: cmd for cmd in audit_commands}
+
+        recommendations_scope = self.get_recommendations_by_level(scope_level=scope_level)
+
+        for recommendation in recommendations_scope:
+            if recommendation.recommend_id in commands_map:
+                cmd = commands_map[recommendation.recommend_id]
+                command, expected_output = audit.get_command_attrs(cmd)
+                recommendation.audit_cmd = AuditCmd(command=command, expected_output=expected_output)
+
+        return audit, recommendations_scope
+
+    def evaluate_recommendations_compliance(self, *, scope_level: int = 1, os_version: str = None) -> List[Recommendation]:
+        audit, recommendations_scope = self._map_recommendations_and_audit_commands(scope_level=scope_level, os_version=os_version)
+        for recommendation in recommendations_scope:
+            audit_cmd = recommendation.audit_cmd
+            if audit_cmd:
+                command = audit_cmd.command
+                expected_output = audit_cmd.expected_output
+                audit_result = audit.run_command(command, expected_output)
+                recommendation.compliant = audit_result
+                yield recommendation
+
     def __repr__(self):
         return f'CISBenchmarkManager(workbook_path="{self.workbook_path}", config_path="{self.config_path}")'
+
+
+

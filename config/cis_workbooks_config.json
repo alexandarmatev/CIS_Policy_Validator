@@ -17,7 +17,8 @@
     "IMPACT": "Impact Statement",
     "SAFEGUARD": "CIS Safeguards 1 (v8)",
     "OVERVIEW_SHEET": "Overview - Glossary",
-    "REQUIRED_COLUMN_TITLES": ["Section #", "Recommendation #", "Title", "Assessment Status", "Description", "Rationale Statement", "Impact Statement", "CIS Safeguards 1 (v8)"]
+    "REQUIRED_COLUMN_TITLES": ["Section #", "Recommendation #", "Title", "Assessment Status", "Description", "Rationale Statement", "Impact Statement", "CIS Safeguards 1 (v8)"],
+    "COMMANDS_JSON_PATH": "config/audit_commands.json"
   },
   "CISControlManager": {
     "WORKSHEET_NAME": "Controls V8",
@@ -29,7 +30,7 @@
     "DESCRIPTION": "Description",
     "REQUIRED_COLUMN_TITLES": ["CIS Control", "CIS Safeguard", "Asset Type", "Security Function", "Title", "Description"]
   },
-  "AuditCommandsManager": {
+  "AuditCommandManager": {
     "OS_VERSION_REX": "ProductVersion:\\s\\s(\\d+)",
     "OS_MAPPING": {"10": "X", "11": "Big Sur", "12": "Monterey", "13": "MacOS Ventura", "14":  "MacOS Sonoma"},
     "ALLOWED_OS_VERSIONS": ["MacOS Ventura", "MacOS Sonoma"]
