@@ -518,7 +518,7 @@ class CISBenchmarkManager(ExcelWorkbookBase):
                 recommendation.compliant = audit_result
                 yield recommendation
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Represents the CISBenchmarkManager instance as a string.
 
