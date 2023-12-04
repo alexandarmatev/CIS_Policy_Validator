@@ -1,6 +1,8 @@
 from DataModels import Recommendation, RecommendHeader, AuditCmd
 from ExcelWorkbookBase import ExcelWorkbookBase
 from AuditCommandManager import AuditCommandManager
+from CISControlManager import CISControlManager
+from constants.constants import CIS_CONTROLS_PATH, JSON_COMMANDS_PATH
 import re
 from collections import defaultdict
 from openpyxl.worksheet.worksheet import Worksheet
@@ -8,7 +10,27 @@ from typing import Dict, Tuple, Set, List, Iterator, Generator
 
 
 class CISBenchmarkManager(ExcelWorkbookBase):
+    """
+    CISBenchmarkManager is a class that extends ExcelWorkbookBase, designed to manage and process
+    CIS (Center for Internet Security) benchmarks within an Excel workbook. It includes functionalities
+    to extract and handle benchmark profiles, scope levels, and assessment methods.
+
+    Attributes inherited from ExcelWorkbookBase:
+        _workbook_path (str): Path to the Excel workbook file.
+        _workbook (openpyxl.Workbook): Instance of the openpyxl Workbook.
+        _config_path (str): Path to the JSON configuration file.
+        _config (dict): Configuration data specific to the class instance.
+        _cache (dict): Cache for storing processed data.
+    """
     def __init__(self, workbook_path: str, config_path: str):
+        """
+        Initializes the CISBenchmarkManager with the given workbook and configuration paths.
+        It populates benchmark profiles and scope level mappings.
+
+        Parameters:
+            workbook_path: Path to the Excel workbook.
+            config_path: Path to the configuration file.
+        """
         super().__init__(workbook_path, config_path)
         self._benchmark_profiles = self._get_benchmark_profiles()
         self._scope_levels_os_mapping = self._populate_scope_levels_os_mapping()
@@ -17,53 +39,121 @@ class CISBenchmarkManager(ExcelWorkbookBase):
 
     @property
     def benchmark_profiles(self) -> List[Tuple]:
+        """
+        Gets the extracted benchmark profiles.
+
+        Returns:
+            A list of tuples representing the benchmark profiles.
+        """
         return self._benchmark_profiles
 
     @property
     def scope_levels_os_mapping(self) -> Dict:
+        """
+        Gets the mapping of scope levels to operating systems.
+
+        Returns:
+            A dictionary mapping scope levels to lists of operating systems.
+        """
         return self._scope_levels_os_mapping
 
     @property
     def scope_levels(self) -> Dict:
+        """
+        Gets the scope levels from the configuration.
+
+        Returns:
+            A dictionary mapping scope level integers to their titles.
+        """
         return {int(level): title for level, title in self.config['SCOPE_LEVELS'].items()}
 
     @property
     def allowed_assessment_methods(self) -> Set:
+        """
+        Gets the allowed assessment methods from the configuration.
+
+        Returns:
+            A set of allowed assessment methods.
+        """
         return self.config['ALLOWED_ASSESSMENT_METHODS']
 
     @property
     def benchmark_profiles_rex(self) -> str:
+        """
+        Gets the regular expression used for extracting benchmark profiles.
+
+        Returns:
+            A string representing the regular expression for benchmark profiles.
+        """
         return self.config['BENCHMARK_PROFILES_REX']
 
     @property
     def recommendation(self) -> str:
+        """
+        Gets the recommendation key from the configuration.
+
+        Returns:
+            Recommendation key.
+        """
         return self._config['RECOMMENDATION']
 
     @property
     def rationale(self) -> str:
+        """
+        Gets the rationale key from the configuration.
+
+        Returns:
+            Rationale key.
+        """
         return self.config['RATIONALE']
 
     @property
     def impact(self) -> str:
+        """
+        Gets the impact key from the configuration.
+
+        Returns:
+            Impact key.
+        """
         return self.config['IMPACT']
 
     @property
     def assess_status(self) -> str:
+        """
+        Gets the assessment status key from the configuration.
+
+        Returns:
+            Assessment status key.
+        """
         return self.config['ASSESS_STATUS']
 
     @property
     def section(self) -> str:
+        """
+        Gets the section key from the configuration.
+
+        Returns:
+            Section key.
+        """
         return self.config['SECTION']
 
     @property
     def overview_sheet(self) -> str:
+        """
+        Gets the name of the overview sheet from the configuration.
+
+        Returns:
+            Name of the overview sheet.
+        """
         return self.config['OVERVIEW_SHEET']
 
-    @property
-    def commands_json_path(self) -> str:
-        return self.config['COMMANDS_JSON_PATH']
-
     def _get_benchmark_profiles(self) -> list:
+        """
+        Extracts benchmark profiles using a regular expression from the overview sheet of the workbook.
+
+        Returns:
+            A list of tuples containing benchmark profiles and their respective levels.
+        """
         regex_pattern = self.benchmark_profiles_rex
         sheet_name = self._validate_and_return_sheet_name(self.overview_sheet)
         overview_worksheet = self._workbook[sheet_name]
@@ -71,6 +161,12 @@ class CISBenchmarkManager(ExcelWorkbookBase):
         return re.findall(regex_pattern, overview_paragraphs)
 
     def _populate_scope_levels_os_mapping(self) -> Dict:
+        """
+        Creates a mapping of scope levels to operating systems using benchmark profiles.
+
+        Returns:
+            A dictionary where keys are scope levels and values are lists of operating systems.
+        """
         benchmark_profiles = self._benchmark_profiles
         scope_levels_os_mapping = defaultdict(list)
         for profile, profile_level in benchmark_profiles:
@@ -78,6 +174,18 @@ class CISBenchmarkManager(ExcelWorkbookBase):
         return scope_levels_os_mapping
 
     def _validate_and_return_benchmark_scope_profile(self, scope_level: int) -> str:
+        """
+        Validates the given scope level and returns the first operating system associated with it.
+
+        Parameters:
+            scope_level: An integer representing the scope level.
+
+        Returns:
+            str: The name of the first operating system associated with the given scope level.
+
+        Raises:
+            ValueError: If there is no benchmark profile for the given scope level.
+        """
         scope_level = self._validate_and_return_scope_level(scope_level)
         scope_level_os = self._scope_levels_os_mapping[scope_level]
         if not scope_level_os:
@@ -85,6 +193,19 @@ class CISBenchmarkManager(ExcelWorkbookBase):
         return next(iter(scope_level_os))
 
     def _validate_and_return_scope_level(self, scope_level: int) -> int:
+        """
+        Validates that the given scope level is an integer and exists within the defined scope levels.
+
+        Parameters:
+            scope_level: An integer representing the scope level.
+
+        Returns:
+            The validated scope level.
+
+        Raises:
+            TypeError: If the scope level is not an integer.
+            ValueError: If the scope level is not in the defined scope levels.
+        """
         if not isinstance(scope_level, int):
             raise TypeError(f'scope_level must be an integer, got {type(scope_level).__name__}')
         if scope_level not in self.scope_levels:
@@ -93,11 +214,36 @@ class CISBenchmarkManager(ExcelWorkbookBase):
 
     @staticmethod
     def _validate_and_return_item_id(item_id: str) -> str:
+        """
+        Validates that the given item ID is a string.
+
+        Parameters:
+            item_id: A string representing the item ID.
+
+        Returns:
+            The validated item ID.
+
+        Raises:
+            TypeError: If the item ID is not a string.
+        """
         if not isinstance(item_id, str):
             raise TypeError(f'item_id must be a string, got {type(item_id).__name__}')
         return item_id
 
     def _validate_and_get_items_by_type(self, scope_level: int, item_type: str) -> List[Recommendation] | List[RecommendHeader]:
+        """
+        Validates the item type and returns a list of items (either Recommendations or RecommendHeaders) for the given scope level.
+
+        Parameters:
+            scope_level: An integer representing the scope level.
+            item_type: A string representing the type of items to retrieve ('recommendation' or 'recommend_header').
+
+        Returns:
+            A list of either Recommendation or RecommendHeader objects for the given scope level.
+
+        Raises:
+            KeyError: If an invalid item type is provided.
+        """
         if item_type.casefold() == 'recommendation':
             scope_items = self.get_recommendations_by_level(scope_level=scope_level)
         elif item_type.casefold() == 'recommend_header':
@@ -108,6 +254,18 @@ class CISBenchmarkManager(ExcelWorkbookBase):
         return scope_items
 
     def _validate_assessment_method_type(self, assessment_method: str) -> str:
+        """
+        Validates the assessment method against the allowed assessment methods.
+
+        Parameters:
+            assessment_method: A string representing the assessment method to validate.
+
+        Returns:
+            The validated assessment method.
+
+        Raises:
+            ValueError: If the assessment method is None or not in the allowed assessment methods.
+        """
         if assessment_method is None:
             raise ValueError("Assessment method cannot be 'None'.")
         if assessment_method.casefold() not in self.allowed_assessment_methods:
@@ -116,6 +274,15 @@ class CISBenchmarkManager(ExcelWorkbookBase):
         return assessment_method
 
     def _get_worksheet_scope_headers(self, scope_level: int) -> Tuple[Worksheet, Dict[str, int]]:
+        """
+        Retrieves the worksheet and header column indices for the given scope level.
+
+        Parameters:
+            scope_level: An integer representing the scope level.
+
+        Returns:
+            A tuple containing the worksheet and a dictionary of column headers with their respective indices.
+        """
         scope_level = self._validate_and_return_scope_level(scope_level)
         curr_sheet_level = self.scope_levels[scope_level]
         sheet_name = self._validate_and_return_sheet_name(curr_sheet_level)
@@ -126,6 +293,16 @@ class CISBenchmarkManager(ExcelWorkbookBase):
         return worksheet, column_indices
 
     def _get_worksheet_row_attributes(self, worksheet: Worksheet, column_indices: Dict[str, int]) -> Iterator[Tuple[str, str, str, bool]]:
+        """
+        Iterates through worksheet rows, extracting attributes based on the provided column indices.
+
+        Parameters:
+            worksheet: The worksheet to iterate through.
+            column_indices: A dictionary mapping column titles to their respective indices.
+
+        Returns:
+            An iterator that yields tuples containing extracted row attributes.
+        """
         if self._validate_column_titles(column_indices, self.required_column_titles):
             for row in worksheet.iter_rows(min_row=2, values_only=True):
                 recommend_id = row[column_indices[self.recommendation]]
@@ -144,6 +321,12 @@ class CISBenchmarkManager(ExcelWorkbookBase):
                 yield recommend_id, title, description, rationale, impact, safeguard_id, assessment_method, is_header
 
     def _get_worksheet_all_scopes_row_attributes(self) -> Generator:
+        """
+        Generates worksheet row attributes for all scope levels and their corresponding benchmark profiles.
+
+        Returns:
+            A generator that yields tuples containing scope level, profile, and worksheet row attributes.
+        """
         all_scopes_mapping = self._scope_levels_os_mapping.items()
         for level, benchmark_profiles in all_scopes_mapping:
             worksheet, column_indices = self._get_worksheet_scope_headers(level)
@@ -152,6 +335,12 @@ class CISBenchmarkManager(ExcelWorkbookBase):
                 yield level, profile, worksheet_row_attrs
 
     def _initialize_cache_and_headers_keys(self) -> Tuple[Dict[str, List], Dict[str, List]]:
+        """
+        Initializes the cache and headers with keys based on benchmark profiles.
+
+        Returns:
+            Two dictionaries for cache and headers, respectively, with benchmark profiles as keys.
+        """
         cache_mapping = {}
         headers_mapping = {}
         for _, benchmark_profiles in self._scope_levels_os_mapping.items():
@@ -161,6 +350,9 @@ class CISBenchmarkManager(ExcelWorkbookBase):
         return cache_mapping, headers_mapping
 
     def _populate_benchmark_cache_and_headers(self):
+        """
+        Populates the benchmark cache and headers with recommendations and headers extracted from the worksheets.
+        """
         self._cache, self._headers = self._initialize_cache_and_headers_keys()
         all_scopes_attributes = self._get_worksheet_all_scopes_row_attributes()
         for level, profile, worksheet_row_attrs in all_scopes_attributes:
@@ -177,6 +369,20 @@ class CISBenchmarkManager(ExcelWorkbookBase):
                     self._cache[profile].append(recommendation)
 
     def get_item_by_id(self, *, scope_level: int = 1, item_id: str, item_type: str) -> Recommendation | RecommendHeader:
+        """
+        Retrieves an item (either Recommendation or RecommendHeader) by its ID for a given scope level and item type.
+
+        Parameters:
+            scope_level: An optional integer representing the scope level (default is 1).
+            item_id: A string representing the item ID.
+            item_type: A string representing the type of item ('recommendation' or 'recommend_header').
+
+        Returns:
+            The requested item.
+
+        Raises:
+            KeyError: If the item with the given ID is not found in the specified level and type.
+        """
         scope_level = self._validate_and_return_scope_level(scope_level)
         item_id = self._validate_and_return_item_id(item_id)
         scope_items = self._validate_and_get_items_by_type(scope_level, item_type)
@@ -188,30 +394,95 @@ class CISBenchmarkManager(ExcelWorkbookBase):
         raise KeyError(f'{item_type.capitalize()} with ID {item_id} is not in level {scope_level} of {item_type}s.')
 
     def get_recommendations_by_level(self, *, scope_level: int = 1) -> List[Recommendation]:
+        """
+        Retrieves a list of recommendations for a specified scope level.
+
+        Parameters:
+            scope_level: An optional integer representing the scope level (default is 1).
+
+        Returns:
+            A list of Recommendation objects for the specified scope level.
+        """
         scope_level = self._validate_and_return_scope_level(scope_level)
         scope_profile = self._validate_and_return_benchmark_scope_profile(scope_level)
         return self._cache[scope_profile]
 
     def get_all_levels_recommendations(self) -> Dict[str, List[Dict[str, Recommendation]]]:
+        """
+        Retrieves recommendations for all scope levels.
+
+        Returns:
+            A dictionary where keys are scope levels and values are lists of Recommendation objects.
+        """
         return self._cache
 
     def get_recommendations_scope_headers(self, *, scope_level: int = 1) -> List[RecommendHeader]:
+        """
+        Retrieves a list of recommendation headers for a specified scope level.
+
+        Parameters:
+            scope_level: An optional integer representing the scope level (default is 1).
+
+        Returns:
+            A list of RecommendHeader objects for the specified scope level.
+        """
         scope_level = self._validate_and_return_scope_level(scope_level)
         scope_profile = self._validate_and_return_benchmark_scope_profile(scope_level)
         return self._headers[scope_profile]
 
     def get_all_scopes_recommendation_headers(self) -> Dict[str, List[RecommendHeader]]:
+        """
+        Retrieves recommendation headers for all scope levels.
+
+        Returns:
+            A dictionary where keys are scope levels and values are lists of RecommendHeader objects.
+        """
         return self._headers
 
     def get_recommendations_by_assessment_method(self, *, scope_level: int = 1, assessment_method: str = None) -> Generator:
+        """
+        Generates recommendations for a specified scope level and assessment method.
+
+        Parameters:
+            scope_level: An optional integer representing the scope level (default is 1).
+            assessment_method: An optional string representing the assessment method.
+
+        Returns:
+            Recommendation: Yields Recommendation objects that match the specified assessment method.
+        """
         assessment_method = self._validate_assessment_method_type(assessment_method)
         recommendations_scope = self.get_recommendations_by_level(scope_level=scope_level)
         for recommendation in recommendations_scope:
             if assessment_method == recommendation.assessment_method.casefold():
                 yield recommendation
 
+    def _map_recommendations_and_cis_controls(self, *, recommendations_scope: List[Recommendation]):
+        """
+        Maps CIS controls to recommendations within the specified scope.
+
+        Parameters:
+            recommendations_scope: A list of Recommendation objects to map with CIS controls.
+        """
+        cis_control = CISControlManager(workbook_path=CIS_CONTROLS_PATH, config_path=self.config_path)
+        all_cis_controls = {control.safeguard_id: control for control in cis_control.get_all_controls()}
+
+        for recommendation in recommendations_scope:
+            control = all_cis_controls.get(recommendation.safeguard_id)
+            if control:
+                recommendation.cis_control = control
+
     def _map_recommendations_and_audit_commands(self, *, scope_level: int = 1, os_version: str = None) -> Tuple[AuditCommandManager, List[Recommendation]]:
-        audit = AuditCommandManager(config_path=self.config_path, commands_path=self.commands_json_path, os_version=os_version)
+        """
+        Maps audit commands to recommendations for a specified scope level and operating system version.
+
+        Parameters:
+            scope_level: An optional integer representing the scope level (default is 1).
+            os_version: An optional string representing the operating system version.
+
+        Returns:
+            A tuple containing an instance of AuditCommandManager and a list of mapped Recommendation objects.
+        """
+        audit = AuditCommandManager(config_path=self.config_path, commands_path=JSON_COMMANDS_PATH, os_version=os_version)
         audit_commands = audit.audit_commands
         commands_map = {cmd['recommend_id']: cmd for cmd in audit_commands}
 
@@ -226,7 +497,18 @@ class CISBenchmarkManager(ExcelWorkbookBase):
         return audit, recommendations_scope
 
     def evaluate_recommendations_compliance(self, *, scope_level: int = 1, os_version: str = None) -> List[Recommendation]:
+        """
+        Evaluates the compliance of recommendations based on audit commands and CIS controls for a specified scope level and operating system version.
+
+        Parameters:
+            scope_level: An optional integer representing the scope level (default is 1).
+            os_version: An optional string representing the operating system version.
+
+        Returns:
+            Yields Recommendation objects after evaluating their compliance.
+        """
         audit, recommendations_scope = self._map_recommendations_and_audit_commands(scope_level=scope_level, os_version=os_version)
+        self._map_recommendations_and_cis_controls(recommendations_scope=recommendations_scope)
         for recommendation in recommendations_scope:
             audit_cmd = recommendation.audit_cmd
             if audit_cmd:
@@ -237,6 +519,12 @@ class CISBenchmarkManager(ExcelWorkbookBase):
                 yield recommendation
 
     def __repr__(self):
+        """
+        Represents the CISBenchmarkManager instance as a string.
+
+        Returns:
+            A string representation of the CISBenchmarkManager instance, including paths to the workbook and configuration file.
+        """
         return f'CISBenchmarkManager(workbook_path="{self.workbook_path}", config_path="{self.config_path}")'
 
 

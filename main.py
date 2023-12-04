@@ -1,9 +1,9 @@
 from CISBenchmarkManager import CISBenchmarkManager
 from CISControlManager import CISControlManager
 from AuditCommandManager import AuditCommandManager
-from constants.constants import WORKBOOKS_CONFIG_PATH, COMMANDS_PATH, CIS_CONTROLS_PATH
+from constants.constants import WORKBOOKS_CONFIG_PATH, JSON_COMMANDS_PATH, CIS_CONTROLS_PATH
 
-audit = AuditCommandManager(WORKBOOKS_CONFIG_PATH, COMMANDS_PATH)
+audit = AuditCommandManager(WORKBOOKS_CONFIG_PATH, JSON_COMMANDS_PATH)
 
 workbook_path = audit.workbook_path
 workbook = CISBenchmarkManager(workbook_path, WORKBOOKS_CONFIG_PATH)
@@ -11,8 +11,7 @@ workbook = CISBenchmarkManager(workbook_path, WORKBOOKS_CONFIG_PATH)
 evaluated_recommendations = workbook.evaluate_recommendations_compliance(scope_level=1, os_version='MacOS Ventura')
 
 for recommendation in evaluated_recommendations:
-    print(f'{recommendation.title} - {recommendation.compliant}')
-
+    print(f'{recommendation.title} - {recommendation.compliant} - {recommendation.cis_control.title}')
 
 # control = CISControlManager(CIS_CONTROLS_PATH, WORKBOOKS_CONFIG_PATH)
 #
