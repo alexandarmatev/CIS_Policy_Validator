@@ -18,7 +18,7 @@ class AuditCommandManager:
         _workbook_version_path (str): Path to the workbook file version specific to the OS version.
         _audit_commands (List[Dict]): List of audit command dictionaries specific to the OS version.
     """
-    def __init__(self, config_path, commands_path, *, os_version=None):
+    def __init__(self, *, config_path, commands_path):
         """
         Initializes the AuditCommandManager with configuration and commands paths.
         It loads configuration and audit commands specific to the given or current OS version.
@@ -26,15 +26,11 @@ class AuditCommandManager:
         Parameters:
             config_path: Path to the JSON configuration file.
             commands_path: Path to the JSON file containing audit commands.
-            os_version: Optional; specific OS version to use. If not provided, the current OS version is used.
         """
         self._config_path = validate_and_return_file_path(config_path, 'json')
         self._commands_path = validate_and_return_file_path(commands_path, 'json')
         self._config = load_config(config_path)[self.__class__.__name__]
-        if os_version is None:
-            self._os_version = validate_and_return_os_version(self._get_current_os_version(), self.allowed_os_versions)
-        else:
-            self._os_version = validate_and_return_os_version(os_version, self.allowed_os_versions)
+        self._os_version = validate_and_return_os_version(self._get_current_os_version(), self.allowed_os_versions)
         self._workbook_version_path = validate_and_return_workbook_version_path(self.os_version)
         self._audit_commands = load_config(commands_path)[self.os_version]
 
@@ -91,7 +87,7 @@ class AuditCommandManager:
         """
         if len(self._audit_commands[0]) > 0:
             return self._audit_commands
-        raise ValueError('Audit commands not found.')
+        raise ValueError(f'Audit commands for {self.os_version} not found.')
 
     @property
     def os_version(self) -> str:

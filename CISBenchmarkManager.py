@@ -2,7 +2,6 @@ from DataModels import Recommendation, RecommendHeader, AuditCmd
 from ExcelWorkbookBase import ExcelWorkbookBase
 from AuditCommandManager import AuditCommandManager
 from CISControlManager import CISControlManager
-from constants.constants import CIS_CONTROLS_PATH, JSON_COMMANDS_PATH
 import re
 from collections import defaultdict
 from openpyxl.worksheet.worksheet import Worksheet
@@ -11,9 +10,9 @@ from typing import Dict, Tuple, Set, List, Iterator, Generator
 
 class CISBenchmarkManager(ExcelWorkbookBase):
     """
-    CISBenchmarkManager is a class that extends ExcelWorkbookBase, designed to manage and process
-    CIS (Center for Internet Security) benchmarks within an Excel workbook. It includes functionalities
-    to extract and handle benchmark profiles, scope levels, and assessment methods.
+    Manages and processes CIS (Center for Internet Security) benchmarks within an Excel workbook.
+    Inherits from ExcelWorkbookBase and utilizes an AuditCommandManager instance to determine
+    the correct workbook path based on the OS system version. Assumes a constant configuration path.
 
     Attributes inherited from ExcelWorkbookBase:
         _workbook_path (str): Path to the Excel workbook file.
@@ -22,20 +21,26 @@ class CISBenchmarkManager(ExcelWorkbookBase):
         _config (dict): Configuration data specific to the class instance.
         _cache (dict): Cache for storing processed data.
     """
-    def __init__(self, workbook_path: str, config_path: str):
+    def __init__(self, *, workbook_path: str, config_path: str, audit_manager: AuditCommandManager, cis_control_manager: CISControlManager):
         """
-        Initializes the CISBenchmarkManager with the given workbook and configuration paths.
-        It populates benchmark profiles and scope level mappings.
+        Initializes the CISBenchmarkManager with an audit manager which determines the appropriate
+        workbook path based on the current OS system version. Utilizes a constant configuration path.
 
         Parameters:
-            workbook_path: Path to the Excel workbook.
-            config_path: Path to the configuration file.
+            workbook_path: The path to the Excel workbook.
+            config_path: The path to the JSON configuration file.
+            audit_manager: An instance of AuditCommandManager responsible for managing audit commands and determining the correct workbook path.
+            cis_control_manager (CISControlManager): An instance of CISControlManager responsible for managing and accessing CIS control data.
         """
         super().__init__(workbook_path, config_path)
+        self._audit_manager = audit_manager
+        self._cis_control_manager = cis_control_manager
         self._benchmark_profiles = self._get_benchmark_profiles()
         self._scope_levels_os_mapping = self._populate_scope_levels_os_mapping()
         self._headers = None
         self._populate_benchmark_cache_and_headers()
+        self._map_recommendations_and_cis_controls()
+        self._map_recommendations_and_audit_commands()
 
     @property
     def benchmark_profiles(self) -> List[Tuple]:
@@ -456,65 +461,50 @@ class CISBenchmarkManager(ExcelWorkbookBase):
             if assessment_method == recommendation.assessment_method.casefold():
                 yield recommendation
 
-    def _map_recommendations_and_cis_controls(self, *, recommendations_scope: List[Recommendation]):
+    def _map_recommendations_and_cis_controls(self):
         """
         Maps CIS controls to recommendations within the specified scope.
-
-        Parameters:
-            recommendations_scope: A list of Recommendation objects to map with CIS controls.
         """
-        cis_control = CISControlManager(workbook_path=CIS_CONTROLS_PATH, config_path=self.config_path)
-        all_cis_controls = {control.safeguard_id: control for control in cis_control.get_all_controls()}
+        all_cis_controls = {control.safeguard_id: control for control in self._cis_control_manager.get_all_controls()}
+        for scope_level in self.scope_levels:
+            recommendations_scope = self.get_recommendations_by_level(scope_level=scope_level)
+            for recommendation in recommendations_scope:
+                control = all_cis_controls.get(recommendation.safeguard_id)
+                if control:
+                    recommendation.cis_control = control
 
-        for recommendation in recommendations_scope:
-            control = all_cis_controls.get(recommendation.safeguard_id)
-            if control:
-                recommendation.cis_control = control
-
-    def _map_recommendations_and_audit_commands(self, *, scope_level: int = 1, os_version: str = None) -> Tuple[AuditCommandManager, List[Recommendation]]:
+    def _map_recommendations_and_audit_commands(self):
         """
         Maps audit commands to recommendations for a specified scope level and operating system version.
-
-        Parameters:
-            scope_level: An optional integer representing the scope level (default is 1).
-            os_version: An optional string representing the operating system version.
-
-        Returns:
-            A tuple containing an instance of AuditCommandManager and a list of mapped Recommendation objects.
         """
-        audit = AuditCommandManager(config_path=self.config_path, commands_path=JSON_COMMANDS_PATH, os_version=os_version)
-        audit_commands = audit.audit_commands
+        audit_commands = self._audit_manager.audit_commands
         commands_map = {cmd['recommend_id']: cmd for cmd in audit_commands}
 
-        recommendations_scope = self.get_recommendations_by_level(scope_level=scope_level)
+        for scope_level in self.scope_levels:
+            recommendations_scope = self.get_recommendations_by_level(scope_level=scope_level)
+            for recommendation in recommendations_scope:
+                if recommendation.recommend_id in commands_map:
+                    cmd = commands_map[recommendation.recommend_id]
+                    command, expected_output = self._audit_manager.get_command_attrs(cmd)
+                    recommendation.audit_cmd = AuditCmd(command=command, expected_output=expected_output)
 
-        for recommendation in recommendations_scope:
-            if recommendation.recommend_id in commands_map:
-                cmd = commands_map[recommendation.recommend_id]
-                command, expected_output = audit.get_command_attrs(cmd)
-                recommendation.audit_cmd = AuditCmd(command=command, expected_output=expected_output)
-
-        return audit, recommendations_scope
-
-    def evaluate_recommendations_compliance(self, *, scope_level: int = 1, os_version: str = None) -> List[Recommendation]:
+    def evaluate_recommendations_compliance(self, *, scope_level: int = 1) -> List[Recommendation]:
         """
         Evaluates the compliance of recommendations based on audit commands and CIS controls for a specified scope level and operating system version.
 
         Parameters:
             scope_level: An optional integer representing the scope level (default is 1).
-            os_version: An optional string representing the operating system version.
 
         Returns:
             Yields Recommendation objects after evaluating their compliance.
         """
-        audit, recommendations_scope = self._map_recommendations_and_audit_commands(scope_level=scope_level, os_version=os_version)
-        self._map_recommendations_and_cis_controls(recommendations_scope=recommendations_scope)
+        recommendations_scope = self.get_recommendations_by_level(scope_level=scope_level)
         for recommendation in recommendations_scope:
             audit_cmd = recommendation.audit_cmd
             if audit_cmd:
                 command = audit_cmd.command
                 expected_output = audit_cmd.expected_output
-                audit_result = audit.run_command(command, expected_output)
+                audit_result = self._audit_manager.run_command(command, expected_output)
                 recommendation.compliant = audit_result
                 yield recommendation
 
