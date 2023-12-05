@@ -30,7 +30,7 @@ class CISBenchmarkManager(ExcelWorkbookBase):
             workbook_path: The path to the Excel workbook.
             config_path: The path to the JSON configuration file.
             audit_manager: An instance of AuditCommandManager responsible for managing audit commands and determining the correct workbook path.
-            cis_control_manager (CISControlManager): An instance of CISControlManager responsible for managing and accessing CIS control data.
+            cis_control_manager: An instance of CISControlManager responsible for managing and accessing CIS control data.
         """
         super().__init__(workbook_path, config_path)
         self._audit_manager = audit_manager
