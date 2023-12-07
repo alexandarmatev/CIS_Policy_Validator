@@ -179,8 +179,61 @@
       "description": "Ensure an Administrator Password Is Required to Access System-Wide Preferences",
       "command": "authDBs=(\"system.preferences\" \"system.preferences.energysaver\"\n \"system.preferences.network\" \"system.preferences.printing\"\n \"system.preferences.sharing\" \"system.preferences.softwareupdate\"\n \"system.preferences.startupdisk\" \"system.preferences.timemachine\")\nresult=\"1\"\n\nfor section in \"${authDBs[@]}\"; do\nif [[ $(/usr/bin/sudo /usr/bin/security -q authorizationdb read \"$section\" | /usr/bin/xmllint -xpath 'name(//*[contains(text(), \"shared\")]/following-sibling::*[1])' -) != \"false\" ]]; then\nresult=\"0\"\nfi\ndone\n\necho $result\n",
       "expected_output": "1"
+    },
+    {
+      "recommend_id": "2.9.2",
+      "description": "Ensure Power Nap Is Disabled for Intel Macs",
+      "command": "/usr/bin/sudo /usr/bin/pmset -g custom | /usr/bin/grep -c \"powernap'\\s+'1\"",
+      "expected_output": "0"
+    },
+    {
+      "recommend_id": "2.9.3",
+      "description": "Ensure Wake for Network Access Is Disabled",
+      "command": "output=$(/usr/bin/sudo /usr/bin/pmset -g custom | /usr/bin/grep \"womp\")\n\ntotal_womp_count=0\nwomp_zero_count=0\n\nwhile IFS= read -r line; do\nif [[ \"$line\" =~ womp ]]; then\n((total_womp_count++))\nif [[ \"$line\" =~ womp[[:space:]]+0 ]]; then\n((womp_zero_count++))\nfi\nfi\ndone <<< \"$output\"\n\nif [[ $total_womp_count -eq $womp_zero_count ]]; then\necho \"true\"\nelse\necho \"false\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "2.10.1",
+      "description": "Ensure an Inactivity Interval of 20 Minutes Or Less for the Screen Saver Is Enabled",
+      "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\nfunction run() {\n let timeout = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.screensaver')\n.objectForKey('idleTime'))\n if ( timeout <= 1200 ) {\n return(\"true\")\n } else {\n return(\"false\")\n }\n}\nEOS",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "2.10.2",
+      "description": "Ensure Require Password After Screen Saver Begins or Display Is Turned Off Is Enabled for 5 Seconds or Immediately",
+      "command": "output=$(/usr/bin/sudo /usr/bin/osascript -l JavaScript <<'EOS'\n(function() {\nlet pref1 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.screensaver').objectForKey('askForPassword'));\nlet pref2 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.screensaver').objectForKey('askForPasswordDelay'));\nif (pref1 === 1 && pref2 <= 5) {\nreturn \"true\";\n} else {\nreturn \"check_sysadminctl\";\n  }\n})();\nEOS\n)\n\nif [[ \"$output\" == \"true\" ]]; then\necho \"true\"\nelif [[ \"$output\" == \"check_sysadminctl\" ]]; then\nsysadminctl_output=$(/usr/bin/sudo /usr/sbin/sysadminctl -screenLock status 2>&1)\ndelay=$(echo \"$sysadminctl_output\" | awk -F 'delay is ' '{print $2}' | awk '{print $1}')\nif [[ \"$delay\" == \"immediate\" || \"$delay\" -le 5 ]]; then\necho \"true\"\nelse\necho \"false\"\nfi\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "2.10.3",
+      "description": "Ensure a Custom Message for the Login Screen Is Enabled",
+      "command": "output=$(/usr/bin/sudo /usr/bin/osascript -l JavaScript <<'EOS'\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.loginwindow')\n.objectForKey('LoginwindowText').js\nEOS\n)\n\nif [ -z \"$output\" ]; then\necho \"false\"\nelse\necho \"true\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "2.10.4",
+      "description": "Ensure Login Window Displays as Name and Password Is Enabled",
+      "command": "output=$(/usr/bin/sudo /usr/bin/osascript -l JavaScript <<EOS\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.loginwindow')\n.objectForKey('SHOWFULLNAME').js\nEOS\n)\n\nif [ -z \"$output\" ] || [ \"$output\" = \"false\" ]; then\necho \"false\"\nelse\necho \"true\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "2.10.5",
+      "description": "Ensure Show Password Hints Is Disabled",
+      "command": "output=$(/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.loginwindow')\n.objectForKey('RetriesUntilHint').js\nEOS\n)\n\nif [ -z \"$output\" ] || [ \"$output\" = \"0\" ]; then\necho \"true\"\nelse\n  echo \"false\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "2.11.1",
+      "description": "Ensure Users' Accounts Do Not Have a Password Hint",
+      "command": "output=$(/usr/bin/sudo /usr/bin/dscl . -list /Users hint . -list /Users hint)\nif [ -z \"$output\" ]; then\necho \"true\"\nelse\necho \"false\"\nfi",
+      "expected_output": "true"
     }
   ],
   "MacOS Sonoma": [
   ]
 }
+
+
+
+
+
