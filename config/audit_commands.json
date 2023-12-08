@@ -2,236 +2,329 @@
   "MacOS Ventura": [
     {
       "recommend_id": "1.1",
-      "description": "Ensure All Apple-provided Software Is Current",
+      "title": "Ensure All Apple-provided Software Is Current",
       "command": "/usr/bin/sudo /usr/sbin/softwareupdate -l",
       "expected_output": "No new software available."
     },
     {
       "recommend_id": "1.2",
-      "description": "Ensure Auto Update Is Enabled",
+      "title": "Ensure Auto Update Is Enabled",
       "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.SoftwareUpdate')\n.objectForKey('AutomaticCheckEnabled').js\nEOS",
       "expected_output": "true"
     },
     {
       "recommend_id": "1.3",
-      "description": "Ensure Download New Updates When Available Is Enabled",
+      "title": "Ensure Download New Updates When Available Is Enabled",
       "command": " /usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.SoftwareUpdate')\n.objectForKey('AutomaticDownload').js\nEOS",
       "expected_output": "true"
     },
     {
       "recommend_id": "1.4",
-      "description": "Ensure install of MacOS Updates is Enabled",
+      "title": "Ensure install of MacOS Updates is Enabled",
       "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.SoftwareUpdate')\n.objectForKey('AutomaticallyInstallMacOSUpdates').js\nEOS",
       "expected_output": "true"
     },
     {
       "recommend_id": "1.5",
-      "description": "Ensure Install Application Updates from the App Store Is Enabled",
+      "title": "Ensure Install Application Updates from the App Store Is Enabled",
       "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << 'EOS'\nfunction run() {\n let pref1 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.commerce')\n .objectForKey('AutoUpdate'));\n let pref2 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.SoftwareUpdate')\n .objectForKey('AutomaticallyInstallAppUpdates'));\n if ( pref1 == 1 || pref2 == 1 ) {\nreturn('true');\n} else {\nreturn('false');\n}\n}\nEOS",
       "expected_output": "true"
     },
     {
       "recommend_id": "1.6",
-      "description": "Ensure Install Security Responses and System Files Is Enabled",
+      "title": "Ensure Install Security Responses and System Files Is Enabled",
       "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\nfunction run() {\n let pref1 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.SoftwareUpdate')\\\n .objectForKey('ConfigDataInstall'))\n let pref2 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.SoftwareUpdate')\n .objectForKey('CriticalUpdateInstall'))\n if ( pref1 == 1 && pref2 == 1 ) {\nreturn(\"true\")\n} else {\n return(\"false\")\n }\n}\nEOS",
       "expected_output": "true"
     },
     {
       "recommend_id": "1.7",
-      "description": "Ensure Software Update Deferment Is Less Than or Equal to 30 Days",
+      "title": "Ensure Software Update Deferment Is Less Than or Equal to 30 Days",
       "command": "result=$(/usr/bin/sudo /usr/bin/osascript -l JavaScript << 'EOS'\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.applicationaccess')\n .objectForKey('enforcedSoftwareUpdateDelay').js\nEOS\n)\n\nif [ -z \"$result\" ]; then\necho \"true\"\nelif [ \"$result\" -le 30 ]; then\necho \"true\"\nelse\necho \"false\"\nfi",
       "expected_output": "true"
     },
     {
       "recommend_id": "1.8",
-      "description": "Ensure the System is Managed by a Mobile Device Management (MDM) Software",
+      "title": "Ensure the System is Managed by a Mobile Device Management (MDM) Software",
       "command": "sudo /usr/bin/profiles status -type enrollment | /usr/bin/awk -F: '/MDM enrollment/ {print $2}' | /usr/bin/grep -c \"Yes (User Approved)\"",
       "expected_output": "1"
     },
     {
       "recommend_id": "2.2.1",
-      "description": "Ensure Firewall Is Enabled",
+      "title": "Ensure Firewall Is Enabled",
       "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\nfunction run() {\napp = Application.currentApplication()\napp.includeStandardAdditions = true;\n\n let pref1 = app.doShellScript('/usr/bin/defaults read /Library/Preferences/com.apple.alf globalstate')\n let pref2 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.security.firewall')\n .objectForKey('EnableFirewall'))\n\n if ( ( ( pref1 == 1 ) || ( pref1 == 2 ) || ( pref2 == \"true\" ) ) && (pref1 != 0 ) ) {\n return(\"true\")\n } else {\n return(\"false\")\n }\n\n}\nEOS",
       "expected_output": "true"
     },
     {
       "recommend_id": "2.2.2",
-      "description": "Ensure Firewall Stealth Mode Is Enabled",
+      "title": "Ensure Firewall Stealth Mode Is Enabled",
       "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\nfunction run() {\nlet pref1 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.alf')\n .objectForKey('stealthenabled'))\n let pref2 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.security.firewall')\n .objectForKey('EnableStealthMode'))\n if ( ( pref1 == 1 ) || ( pref2 == \"true\" ) ) {\n return(\"true\")\n } else {\n return(\"false\")\n }\n}\nEOS",
       "expected_output": "true"
     },
     {
       "recommend_id": "2.3.1.1",
-      "description": "Ensure AirDrop Is Disabled When Not Actively Transferring Files",
+      "title": "Ensure AirDrop Is Disabled When Not Actively Transferring Files",
       "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << 'EOS'\nfunction checkAirDrop() {\nlet userDefaults = $.NSUserDefaults.alloc.initWithSuiteName('com.apple.applicationaccess');\n let allowAirDrop = userDefaults.objectForKey('allowAirDrop');\n if (typeof allowAirDrop === 'undefined' || allowAirDrop === null || allowAirDrop.js !== true) {\nreturn 'false';\n} else {\nreturn 'true';\n}\n}\ncheckAirDrop();\nEOS",
       "expected_output": "false"
     },
     {
       "recommend_id": "2.3.1.2",
-      "description": "Ensure AirPlay Receiver Is Disabled",
+      "title": "Ensure AirPlay Receiver Is Disabled",
       "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << 'EOS'\nfunction checkAirPlayIncomingRequests() {\nlet userDefaults = $.NSUserDefaults.alloc.initWithSuiteName('com.apple.applicationaccess');\n let allowAirPlayIncomingRequests = userDefaults.objectForKey('allowAirPlayIncomingRequests');\n if (typeof allowAirPlayIncomingRequests === 'undefined' || allowAirPlayIncomingRequests === null || allowAirPlayIncomingRequests.js !== true) {\nreturn 'false';\n} else {\nreturn 'true';\n}\n}\ncheckAirPlayIncomingRequests();\nEOS",
       "expected_output": "false"
     },
     {
       "recommend_id": "2.3.2.1",
-      "description": "Ensure Set Time and Date Automatically Is Enabled",
+      "title": "Ensure Set Time and Date Automatically Is Enabled",
       "command": "/usr/bin/sudo /usr/sbin/systemsetup -getusingnetworktime",
       "expected_output": "Network Time: On"
     },
     {
       "recommend_id": "2.3.2.2",
-      "description": "Ensure Time Is Set Within Appropriate Limits",
+      "title": "Ensure Time Is Set Within Appropriate Limits",
       "command": "/usr/bin/sudo /usr/sbin/systemsetup -getnetworktimeserver | awk '{print $4}' | xargs -I {} /usr/bin/sudo /usr/bin/sntp {} | awk '{if ($1 >= -270 && $1 <= 270) print \"true\"; else print \"false\"}'",
       "expected_output": "true"
     },
     {
       "recommend_id": "2.3.3.1",
-      "description": "Ensure DVD or CD Sharing Is Disabled",
+      "title": "Ensure DVD or CD Sharing Is Disabled",
       "command": "/usr/bin/sudo /bin/launchctl list | grep -c com.apple.ODSAgent",
       "expected_output": "0"
     },
     {
       "recommend_id": "2.3.3.2",
-      "description": "Ensure Screen Sharing Is Disabled",
+      "title": "Ensure Screen Sharing Is Disabled",
       "command": "/usr/bin/sudo /bin/launchctl list | grep -c com.apple.screensharing",
       "expected_output": "0"
     },
     {
       "recommend_id": "2.3.3.3",
-      "description": "Ensure File Sharing Is Disabled",
+      "title": "Ensure File Sharing Is Disabled",
       "command": "/usr/bin/sudo /bin/launchctl list | grep -c \"com.apple.smbd\"",
       "expected_output": "0"
     },
     {
       "recommend_id": "2.3.3.4",
-      "description": "Ensure Printer Sharing Is Disabled",
+      "title": "Ensure Printer Sharing Is Disabled",
       "command": "/usr/bin/sudo /usr/sbin/cupsctl | grep -c \"_share_printers=0\"",
       "expected_output": "1"
     },
     {
       "recommend_id": "2.3.3.5",
-      "description": "Ensure Remote Login Is Disabled",
+      "title": "Ensure Remote Login Is Disabled",
       "command": " /usr/bin/sudo /usr/sbin/systemsetup -getremotelogin",
       "expected_output": "Remote Login: Off"
     },
     {
       "recommend_id": "2.3.3.6",
-      "description": "Ensure Remote Management Is Disabled",
+      "title": "Ensure Remote Management Is Disabled",
       "command": "if /usr/bin/sudo /bin/ps -ef | /usr/bin/grep -e ARDAgent | grep -v grep > /dev/null; then\necho \"false\"\nelse\necho \"true\"\nfi",
       "expected_output": "true"
     },
     {
       "recommend_id": "2.3.3.7",
-      "description": "Ensure Remote Apple Events Is Disabled",
+      "title": "Ensure Remote Apple Events Is Disabled",
       "command": "/usr/bin/sudo /usr/sbin/systemsetup -getremoteappleevents",
       "expected_output": "Remote Apple Events: Off"
     },
     {
       "recommend_id": "2.3.3.8",
-      "description": "Ensure Internet Sharing Is Disabled",
+      "title": "Ensure Internet Sharing Is Disabled",
       "command": "output=$(/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.MCX')\n.objectForKey('forceInternetSharingOff').js\nEOS\n)\n\nif [ -z \"$output\" ]; then\nenabledOutput=$(/usr/bin/sudo /usr/bin/defaults read /Library/Preferences/SystemConfiguration/com.apple.nat | awk '/Enabled/ {i++; if(i==2) print; }')\n\nif [[ $enabledOutput =~ \"Enabled = 1\" ]]; then\necho \"false\"\nelif [[ $enabledOutput =~ \"Enabled = 0\" ]]; then\necho \"true\"\nfi\nelse\n  echo \"$output\"\nfi",
       "expected_output": "true"
     },
     {
       "recommend_id": "2.3.3.11",
-      "description": "Ensure Bluetooth Sharing Is Disabled",
+      "title": "Ensure Bluetooth Sharing Is Disabled",
       "command": "output=$(/usr/bin/sudo -u $(whoami) /usr/bin/defaults -currentHost read com.apple.Bluetooth PrefKeyServicesEnabled 2>/dev/null)\n\nif [ -z \"$output\" ]; then\necho \"true\"\nelif [[ \"$output\" == \"0\" ]]; then\necho \"true\"\nelif [[ \"$output\" == \"1\" ]]; then\necho \"false\"\nelse\necho \"true\"\nfi",
       "expected_output": "true"
     },
     {
       "recommend_id": "2.3.4.2",
-      "description": "Ensure Time Machine Volumes Are Encrypted If Time Machine Is Enabled",
+      "title": "Ensure Time Machine Volumes Are Encrypted If Time Machine Is Enabled",
       "command": "/usr/bin/sudo /usr/bin/defaults read /Library/Preferences/com.apple.TimeMachine.plist | grep -c NotEncrypted",
       "expected_output": "0"
     },
     {
       "recommend_id": "2.4.1",
-      "description": "Ensure Show Wi-Fi status in Menu Bar Is Enabled",
+      "title": "Ensure Show Wi-Fi status in Menu Bar Is Enabled",
       "command": "output=$(/usr/bin/sudo -u $(whoami) /usr/bin/defaults -currentHost read com.apple.controlcenter.plist WiFi 2>/dev/null)\n\nif [ -z \"$output\" ]; then\necho \"true\"\nelif [[ \"$output\" == \"2\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi",
       "expected_output": "true"
     },
     {
       "recommend_id": "2.4.2",
-      "description": "Ensure Show Bluetooth Status in Menu Bar Is Enabled",
+      "title": "Ensure Show Bluetooth Status in Menu Bar Is Enabled",
       "command": "output=$(/usr/bin/sudo -u $(whoami) /usr/bin/defaults -currentHost read com.apple.controlcenter.plist Bluetooth 2>/dev/null)\n\nif [ -z \"$output\" ]; then\necho \"true\"\nelif [[ \"$output\" == \"18\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi",
       "expected_output": "true"
     },
     {
       "recommend_id": "2.6.4",
-      "description": "Ensure Limit Ad Tracking Is Enabled",
+      "title": "Ensure Limit Ad Tracking Is Enabled",
       "command": "output=$(/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.MCX')\n.objectForKey('forceInternetSharingOff').js\nEOS\n)\n\nif [ -z \"$output\" ]; then\nenabledOutput=$(/usr/bin/sudo -u $(whoami) /usr/bin/defaults read /Users/$(whoami)/Library/Preferences/com.apple.AdLib.plist allowApplePersonalizedAdvertising)\n\nif [[ $enabledOutput == \"0\" ]]; then\necho \"false\"\nelse\necho \"true\"\nfi\nelse\necho \"$output\"\nfi",
       "expected_output": "false"
     },
      {
       "recommend_id": "2.6.5",
-      "description": "Ensure Gatekeeper Is Enabled",
+      "title": "Ensure Gatekeeper Is Enabled",
       "command": "/usr/bin/sudo /usr/sbin/spctl --status",
       "expected_output": "assessments enabled"
     },
     {
       "recommend_id": "2.6.6",
-      "description": "Ensure FileVault Is Enabled",
+      "title": "Ensure FileVault Is Enabled",
       "command": "/usr/bin/sudo /usr/bin/fdesetup status",
       "expected_output": "FileVault is On."
     },
     {
       "recommend_id": "2.6.8",
-      "description": "Ensure an Administrator Password Is Required to Access System-Wide Preferences",
+      "title": "Ensure an Administrator Password Is Required to Access System-Wide Preferences",
       "command": "authDBs=(\"system.preferences\" \"system.preferences.energysaver\"\n \"system.preferences.network\" \"system.preferences.printing\"\n \"system.preferences.sharing\" \"system.preferences.softwareupdate\"\n \"system.preferences.startupdisk\" \"system.preferences.timemachine\")\nresult=\"1\"\n\nfor section in \"${authDBs[@]}\"; do\nif [[ $(/usr/bin/sudo /usr/bin/security -q authorizationdb read \"$section\" | /usr/bin/xmllint -xpath 'name(//*[contains(text(), \"shared\")]/following-sibling::*[1])' -) != \"false\" ]]; then\nresult=\"0\"\nfi\ndone\n\necho $result\n",
       "expected_output": "1"
     },
     {
       "recommend_id": "2.9.2",
-      "description": "Ensure Power Nap Is Disabled for Intel Macs",
+      "title": "Ensure Power Nap Is Disabled for Intel Macs",
       "command": "/usr/bin/sudo /usr/bin/pmset -g custom | /usr/bin/grep -c \"powernap'\\s+'1\"",
       "expected_output": "0"
     },
     {
       "recommend_id": "2.9.3",
-      "description": "Ensure Wake for Network Access Is Disabled",
+      "title": "Ensure Wake for Network Access Is Disabled",
       "command": "output=$(/usr/bin/sudo /usr/bin/pmset -g custom | /usr/bin/grep \"womp\")\n\ntotal_womp_count=0\nwomp_zero_count=0\n\nwhile IFS= read -r line; do\nif [[ \"$line\" =~ womp ]]; then\n((total_womp_count++))\nif [[ \"$line\" =~ womp[[:space:]]+0 ]]; then\n((womp_zero_count++))\nfi\nfi\ndone <<< \"$output\"\n\nif [[ $total_womp_count -eq $womp_zero_count ]]; then\necho \"true\"\nelse\necho \"false\"\nfi",
       "expected_output": "true"
     },
     {
       "recommend_id": "2.10.1",
-      "description": "Ensure an Inactivity Interval of 20 Minutes Or Less for the Screen Saver Is Enabled",
+      "title": "Ensure an Inactivity Interval of 20 Minutes Or Less for the Screen Saver Is Enabled",
       "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\nfunction run() {\n let timeout = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.screensaver')\n.objectForKey('idleTime'))\n if ( timeout <= 1200 ) {\n return(\"true\")\n } else {\n return(\"false\")\n }\n}\nEOS",
       "expected_output": "true"
     },
     {
       "recommend_id": "2.10.2",
-      "description": "Ensure Require Password After Screen Saver Begins or Display Is Turned Off Is Enabled for 5 Seconds or Immediately",
+      "title": "Ensure Require Password After Screen Saver Begins or Display Is Turned Off Is Enabled for 5 Seconds or Immediately",
       "command": "output=$(/usr/bin/sudo /usr/bin/osascript -l JavaScript <<'EOS'\n(function() {\nlet pref1 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.screensaver').objectForKey('askForPassword'));\nlet pref2 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.screensaver').objectForKey('askForPasswordDelay'));\nif (pref1 === 1 && pref2 <= 5) {\nreturn \"true\";\n} else {\nreturn \"check_sysadminctl\";\n  }\n})();\nEOS\n)\n\nif [[ \"$output\" == \"true\" ]]; then\necho \"true\"\nelif [[ \"$output\" == \"check_sysadminctl\" ]]; then\nsysadminctl_output=$(/usr/bin/sudo /usr/sbin/sysadminctl -screenLock status 2>&1)\ndelay=$(echo \"$sysadminctl_output\" | awk -F 'delay is ' '{print $2}' | awk '{print $1}')\nif [[ \"$delay\" == \"immediate\" || \"$delay\" -le 5 ]]; then\necho \"true\"\nelse\necho \"false\"\nfi\nfi",
       "expected_output": "true"
     },
     {
       "recommend_id": "2.10.3",
-      "description": "Ensure a Custom Message for the Login Screen Is Enabled",
+      "title": "Ensure a Custom Message for the Login Screen Is Enabled",
       "command": "output=$(/usr/bin/sudo /usr/bin/osascript -l JavaScript <<'EOS'\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.loginwindow')\n.objectForKey('LoginwindowText').js\nEOS\n)\n\nif [ -z \"$output\" ]; then\necho \"false\"\nelse\necho \"true\"\nfi",
       "expected_output": "true"
     },
     {
       "recommend_id": "2.10.4",
-      "description": "Ensure Login Window Displays as Name and Password Is Enabled",
+      "title": "Ensure Login Window Displays as Name and Password Is Enabled",
       "command": "output=$(/usr/bin/sudo /usr/bin/osascript -l JavaScript <<EOS\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.loginwindow')\n.objectForKey('SHOWFULLNAME').js\nEOS\n)\n\nif [ -z \"$output\" ] || [ \"$output\" = \"false\" ]; then\necho \"false\"\nelse\necho \"true\"\nfi",
       "expected_output": "true"
     },
     {
       "recommend_id": "2.10.5",
-      "description": "Ensure Show Password Hints Is Disabled",
+      "title": "Ensure Show Password Hints Is Disabled",
       "command": "output=$(/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.loginwindow')\n.objectForKey('RetriesUntilHint').js\nEOS\n)\n\nif [ -z \"$output\" ] || [ \"$output\" = \"0\" ]; then\necho \"true\"\nelse\n  echo \"false\"\nfi",
       "expected_output": "true"
     },
     {
       "recommend_id": "2.11.1",
-      "description": "Ensure Users' Accounts Do Not Have a Password Hint",
+      "title": "Ensure Users' Accounts Do Not Have a Password Hint",
       "command": "output=$(/usr/bin/sudo /usr/bin/dscl . -list /Users hint . -list /Users hint)\nif [ -z \"$output\" ]; then\necho \"true\"\nelse\necho \"false\"\nfi",
       "expected_output": "true"
+    },
+    {
+      "recommend_id": "2.12.1",
+      "title": "Ensure Guest Account Is Disabled",
+      "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\nfunction run() {\nlet pref1 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.MCX')\n.objectForKey('DisableGuestAccount'))\nlet pref2 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.MCX')\n.objectForKey('EnableGuestAccount'))\nlet pref3 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.loginwindow')\n.objectForKey('GuestEnabled'))\nif (( pref1 == 1 && pref2 == 0 ) || ( pref3 == 0 )) {\n return(\"true\")\n } else {\n return(\"false\")\n }\n}\nEOS",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "2.12.2",
+      "title": "Ensure Guest Access to Shared Folders Is Disabled",
+      "command": "output=$(/usr/bin/sudo /usr/sbin/sysadminctl -smbGuestAccess status 2>&1)\nif echo \"$output\" | grep -q \"SMB guest access disabled\"; then\necho \"true\"\nelse\necho \"false\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "2.12.3",
+      "title": "Ensure Automatic Login Is Disabled",
+      "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\nfunction run() {\n let pref1 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.loginwindow')\n.objectForKey('com.apple.login.mcx.DisableAutoLoginClient'))\nlet pref2 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.loginwindow')\n.objectForKey('autoLoginUser'))\nif ( pref1 == 1 || pref2 == null ) {\n return(\"true\")\n } else {\n return(\"false\")\n }\n}\nEOS",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "3.1",
+      "title": "Ensure Security Auditing Is Enabled",
+      "command": "output=$(/usr/bin/sudo /bin/launchctl list | /usr/bin/awk '$2 == 0 && $3 == \"com.apple.auditd\"')\nif [[ -n \"$output\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "3.3",
+      "title": "Ensure install.log Is Retained for 365 or More Days and No Maximum Size",
+      "command": "ttl_output=$(/usr/bin/sudo /usr/bin/grep -i ttl /etc/asl/com.apple.install)\nall_max_output=$(/usr/bin/sudo /usr/bin/grep -i all_max= /etc/asl/com.apple.install)\nif echo \"$ttl_output\" | grep -q \"ttl≥365\" && [[ -z \"$all_max_output\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi\n",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "3.4",
+      "title": "Ensure Security Auditing Retention Is Enabled",
+      "command": "output=$(/usr/bin/sudo /usr/bin/grep -e \"^expire-after\" /etc/security/audit_control)\nvalue=$(echo \"$output\" | cut -d ':' -f2 | xargs)\nnumber=$(echo \"$value\" | grep -o -E '[0-9]+')\nunit=$(echo \"$value\" | grep -o -E '[a-zA-Z]+')\nmeets_criteria=false\nif [[ $unit == \"G\" && $number -ge 5 ]]; then\necho \"true\"\nelif [[ $unit == \"d\" && $number -ge 60 ]]; then\necho \"true\"\nelif [[ $unit == \"M\" && $number -ge 5120 ]]; then\necho \"true\"\nelse\necho \"false\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "3.6",
+      "title": "Ensure Firewall Logging Is Enabled and Configured",
+      "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\nfunction run() {\nlet pref1 = $.NSUserDefaults.alloc.initWithSuiteName('com.apple.security.firewall')\n.objectForKey('EnableLogging').js\nlet pref2 = $.NSUserDefaults.alloc.initWithSuiteName('com.apple.security.firewall')\n.objectForKey('LoggingOption').js\nlet pref3 = $.NSUserDefaults.alloc.initWithSuiteName('com.apple.alf')\n.objectForKey('loggingenabled').js\nlet pref4 = $.NSUserDefaults.alloc.initWithSuiteName('com.apple.alf')\n.objectForKey('loggingoption').js\n if ( ( pref1 == true && pref2 == \"detail\" ) || ( pref3 == 1 && pref4 == 2 ) ) {\n return(\"true\")\n} else {\n return(\"false\")\n}\n}\nEOS",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "4.2",
+      "title": "Ensure HTTP Server Is Disabled",
+      "command": "/usr/bin/sudo /bin/launchctl list | /usr/bin/grep -c \"org.apache.httpd\"",
+      "expected_output": "0"
+    },
+    {
+      "recommend_id": "4.3",
+      "title": "Ensure NFS Server Is Disabled",
+      "command": "nfsd_count=$(/usr/bin/sudo /bin/launchctl list | /usr/bin/grep -c com.apple.nfsd)\nexports_exists=$(/usr/bin/sudo /bin/cat /etc/exports 2>&1)\nif [[ \"$nfsd_count\" -eq 0 && \"$exports_exists\" == \"cat: /etc/exports: No such file or directory\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi\n",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "5.1.1",
+      "title": "Ensure Home Folders Are Secure",
+      "command": "output=$(/usr/bin/sudo /usr/bin/find /System/Volumes/Data/Users -mindepth 1 -maxdepth 1 -type d -not -perm 700 | /usr/bin/grep -v \"Shared\" | /usr/bin/grep -v \"Guest\")\nif [[ -z \"$output\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi\n",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "5.1.2",
+      "title": "Ensure System Integrity Protection Status (SIP) Is Enabled",
+      "command": "output=$(/usr/bin/sudo /usr/bin/csrutil status)\nif [[ \"$output\" == \"System Integrity Protection status: enabled.\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "5.1.3",
+      "title": "Ensure Apple Mobile File Integrity (AMFI) Is Enabled",
+      "command": "/usr/bin/sudo /usr/sbin/nvram -p | /usr/bin/grep -c \"amfi_get_out_of_my_way=1\"",
+      "expected_output": "0"
+    },
+    {
+      "recommend_id": "5.1.4",
+      "title": "Ensure Sealed System Volume (SSV) Is Enabled",
+      "command": "output=$(/usr/bin/sudo /usr/bin/csrutil authenticated-root status)\nif [[ \"$output\" == \"Authenticated Root status: enabled\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "5.1.5",
+      "title": "Ensure Appropriate Permissions Are Enabled for System Wide Applications",
+      "command": "/usr/bin/sudo /usr/bin/find /System/Volumes/Data/Applications -iname \"*\\.app\" -type d -perm -2 -ls | grep -v Xcode.app | /usr/bin/wc -l | /usr/bin/xargs",
+      "expected_output": "0"
+    },
+    {
+      "recommend_id": "5.1.6",
+      "title": "Ensure No World Writable Folders Exist in the System Folder",
+      "command": "/usr/bin/sudo /usr/bin/find /System/Volumes/Data/System -type d -perm -2 -ls | /usr/bin/grep -v \"downloadDir\" | /usr/bin/wc -l | /usr/bin/xargs",
+      "expected_output": "0"
     }
   ],
   "MacOS Sonoma": [
   ]
 }
+
+
+
 
 
 

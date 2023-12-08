@@ -93,8 +93,8 @@ class CISControlManager(ExcelWorkbookBase):
             A generator yielding RowData namedtuples containing CIS control attributes.
         """
         RowData = namedtuple('RowData', ['safeguard_id', 'asset_type', 'domain', 'title', 'description', 'control_family_id', 'is_family'])
-        safeguard_ids = set()
         if self._validate_column_titles(column_indices, self.required_column_titles):
+            safeguard_ids = set()
             for row in worksheet.iter_rows(min_row=2, values_only=True):
                 safeguard_id = str(row[column_indices[self.safeguard]])
                 if safeguard_id in safeguard_ids:
