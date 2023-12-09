@@ -162,7 +162,7 @@
       "command": "output=$(/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.MCX')\n.objectForKey('forceInternetSharingOff').js\nEOS\n)\n\nif [ -z \"$output\" ]; then\nenabledOutput=$(/usr/bin/sudo -u $(whoami) /usr/bin/defaults read /Users/$(whoami)/Library/Preferences/com.apple.AdLib.plist allowApplePersonalizedAdvertising)\n\nif [[ $enabledOutput == \"0\" ]]; then\necho \"false\"\nelse\necho \"true\"\nfi\nelse\necho \"$output\"\nfi",
       "expected_output": "false"
     },
-     {
+    {
       "recommend_id": "2.6.5",
       "title": "Ensure Gatekeeper Is Enabled",
       "command": "/usr/bin/sudo /usr/sbin/spctl --status",
@@ -317,11 +317,72 @@
       "title": "Ensure No World Writable Folders Exist in the System Folder",
       "command": "/usr/bin/sudo /usr/bin/find /System/Volumes/Data/System -type d -perm -2 -ls | /usr/bin/grep -v \"downloadDir\" | /usr/bin/wc -l | /usr/bin/xargs",
       "expected_output": "0"
+    },
+    {
+      "recommend_id": "5.2.1",
+      "title": "Ensure Password Account Lockout Threshold Is Configured",
+      "command": "max_attempts_output=$(/usr/bin/sudo /usr/bin/pwpolicy -getaccountpolicies 2> /dev/null | /usr/bin/grep \"policyAttributeMaximumFailedAuthentications\")\nmax_attempts=$(echo $max_attempts_output | /usr/bin/cut -d'>' -f2 | /usr/bin/cut -d '<' -f1)\nmax_attempts_result=false\nif [[ \"$max_attempts\" != \"\" && \"$max_attempts\" -le 5 ]]; then\nmax_attempts_result=true\nfi\nlockout_minutes_output=$(/usr/bin/sudo /usr/bin/pwpolicy -getaccountpolicies 2> /dev/null | /usr/bin/grep \"policyAttributeMinutesUntilFailedAuthenticationReset\")\nlockout_minutes=$(echo $lockout_minutes_output | /usr/bin/cut -d'>' -f2 | /usr/bin/cut -d '<' -f1)\nlockout_time_result=false\nif [[ \"$lockout_minutes\" != \"\" && \"$lockout_minutes\" -ge 15 ]]; then\nlockout_time_result=true\nfi\nif [[ \"$max_attempts_result\" == true && \"$lockout_time_result\" == true ]]; then\necho \"true\"\nelse\necho \"false\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "5.2.2",
+      "title": "Ensure Password Minimum Length Is Configured",
+      "command": "output=$(/usr/bin/sudo /usr/bin/pwpolicy -getaccountpolicies | /usr/bin/grep -e \"policyAttributePassword matches\" | /usr/bin/cut -b 46-53 | /usr/bin/cut -d',' -f1 | /usr/bin/cut -d'{' -f2)\nif [ \"$output\" -ge 15 ]; then\necho \"true\"\nelse\n  echo \"false\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "5.2.7",
+      "title": "Ensure Password Age Is Configured",
+      "command": "pref1=$(/usr/bin/sudo /usr/bin/pwpolicy -getaccountpolicies | /usr/bin/grep -A1 policyAttributeExpiresEveryNDays | /usr/bin/tail -1 | /usr/bin/cut -d'>' -f2 | /usr/bin/cut -d '<' -f1) &&\npref2=$(/usr/bin/sudo /usr/bin/pwpolicy -getaccountpolicies | /usr/bin/grep -A1 policyAttributeDaysUntilExpiration | /usr/bin/tail -1 | /usr/bin/cut -d'>' -f2 | /usr/bin/cut -d '<' -f1) && \n[[ (\"$pref1\" != \"\" && \"$pref1\" -le 365) || (\"$pref2\" != \"\" && \"$pref2\" -le 365) ]] && echo \"true\" || echo \"false\"",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "5.2.8",
+      "title": "Ensure Password History Is Configured",
+      "command": "pref=$(/usr/bin/sudo /usr/bin/pwpolicy -getaccountpolicies | /usr/bin/grep -A1 policyAttributePasswordHistoryDepth | /usr/bin/tail -1 | /usr/bin/cut -d'>' -f2 | /usr/bin/cut -d '<' -f1)\nif [[ \"$pref\" != \"\" && \"$pref\" -ge 1 ]]; then\necho \"true\"\nelse\necho \"false\"\nfi\n",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "5.3.1",
+      "title": "Ensure all user storage APFS volumes are encrypted",
+      "command": "output=$(/usr/bin/sudo /usr/sbin/diskutil apfs list)\nall_encrypted=true\nwhile IFS= read -r line; do\nif [[ \"$line\" == *\"FileVault:\"* ]]; then\nfv_status=$(echo \"$line\" | awk -F \"FileVault: \" '{print $2}' | awk '{print $1}')\nif [[ \"$fv_status\" == \"No\" ]]; then\nall_encrypted=false\nbreak\nfi\nfi\ndone <<< \"$output\"\nif $all_encrypted; then\necho \"true\"\nelse\necho \"false\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "5.3.2",
+      "title": "Ensure all user storage CoreStorage volumes are encrypted",
+      "command": "output=$(/usr/bin/sudo /usr/sbin/diskutil cs list)\nencrypted=true\nif [[ \"$output\" != \"No CoreStorage logical volume groups found\" ]]; then\necho \"$output\" | while read -r line; do\nif [[ \"$line\" == *\"Encryption Status:\"* && \"$line\" != *\"Unlocked\"* ]]; then\nencrypted=false\nbreak\nfi\ndone\nfi\nif $encrypted; then\necho \"true\"\nelse\necho \"false\"\nfi\n",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "5.4",
+      "title": "Ensure the Sudo Timeout Period Is Set to Zero",
+      "command": "timeout_check=$(/usr/bin/sudo /usr/bin/sudo -V | /usr/bin/grep -c \"Authentication timestamp timeout: 0.0 minutes\")\nownership_check=$(/usr/bin/stat /etc/sudoers.d | awk '{print $5, $6}')\nif [[ \"$timeout_check\" -eq 1 && \"$ownership_check\" == \"root wheel\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "5.5",
+      "title": "Ensure a Separate Timestamp Is Enabled for Each User/tty Combo",
+      "command": "/usr/bin/sudo /usr/bin/sudo -V | /usr/bin/grep -c \"Type of authentication timestamp record: tty\"",
+      "expected_output": "1"
+    },
+    {
+      "recommend_id": "5.6",
+      "title": "Ensure the root Account Is Disabled",
+      "command": "output=$(/usr/bin/sudo /usr/bin/dscl . -read /Users/root AuthenticationAuthority 2>&1)\nif [[ \"$output\" == \"No such key: AuthenticationAuthority\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "5.7",
+      "title": "Ensure an Administrator Account Cannot Login to Another User's Active and Locked Session",
+      "command": "/usr/bin/sudo /usr/bin/security authorizationdb read system.login.screensaver 2>&1 | /usr/bin/grep -c 'use-login-window-ui'",
+      "expected_output": "1"
     }
   ],
   "MacOS Sonoma": [
   ]
 }
+
 
 
 
