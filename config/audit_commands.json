@@ -377,11 +377,90 @@
       "title": "Ensure an Administrator Account Cannot Login to Another User's Active and Locked Session",
       "command": "/usr/bin/sudo /usr/bin/security authorizationdb read system.login.screensaver 2>&1 | /usr/bin/grep -c 'use-login-window-ui'",
       "expected_output": "1"
+    },
+    {
+      "recommend_id": "5.9",
+      "title": "Ensure Legacy EFI Is Valid and Updating",
+      "command": "processor_brand=$(/usr/bin/sudo /usr/sbin/sysctl -n machdep.cpu.brand_string)\nif [[ \"$processor_brand\" == *\"Apple\"* ]]; then\necho \"true\"\nelse\nt2_check=$(/usr/bin/sudo /usr/sbin/system_profiler SPiBridgeDataType | grep \"T2\")\nefi_check_output=$(/usr/bin/sudo /usr/libexec/firmwarecheckers/eficheck/eficheck --integrity-check)\neficheck_daemon_check=$(/usr/bin/sudo /bin/launchctl list | /usr/bin/grep com.apple.driver.eficheck)\nif [[ \"$t2_check\" == *\"Model Name: Apple T2 Security Chip\"* && \"$efi_check_output\" == *\"Primary allowlist version match found. No changes detected in primary hashes.\" && \"$eficheck_daemon_check\" == \"- 0 com.apple.driver.eficheck\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "5.10",
+      "title": "Ensure the Guest Home Folder Does Not Exist",
+      "command": "output=$(/usr/bin/sudo /bin/ls /Users/ | /usr/bin/grep Guest)\nif [[ -z \"$output\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "5.11",
+      "title": "Ensure XProtect Is Running and Updated",
+      "command": "sudo /bin/launchctl list | /usr/bin/grep -cE \"(com.apple.XprotectFramework.PluginService$|com.apple.XProtect.daemon.scan$)\"",
+      "expected_output": "2"
+    },
+    {
+      "recommend_id": "6.1.1",
+      "title": "Ensure Show All Filename Extensions Setting is Enabled",
+      "command": "output=$(/usr/bin/sudo -u \"$(whoami)\" /usr/bin/defaults read /Users/\"$(whoami)\"/Library/Preferences/.GlobalPreferences.plist AppleShowAllExtensions 2> /dev/null)\nif [[ \"$output\" = \"1\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "6.3.1",
+      "title": "Ensure Automatic Opening of Safe Files in Safari Is Disabled",
+      "command": "output=$(/usr/bin/sudo /usr/sbin/system_profiler SPConfigurationProfileDataType | /usr/bin/grep AutoOpenSafeDownloads | /usr/bin/tr -d ' ' 2> /dev/null)\nif [[ -n \"$output\" ]]; then\nif [[ \"$output\" = \"AutoOpenSafeDownloads = 0;\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi\nelse\noutput2=$(/usr/bin/sudo -u \"$(whoami)\" /usr/bin/defaults read /Users/\"$(whoami)\"/Library/Containers/com.apple.Safari/Data/Library/Preferences/com.apple.Safari AutoOpenSafeDownloads 2> /dev/null)\nif [[ \"$output2\" = \"0\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "6.3.3",
+      "title": "Ensure Warn When Visiting A Fraudulent Website in Safari Is Enabled",
+      "command": "output=$(/usr/bin/sudo /usr/sbin/system_profiler SPConfigurationProfileDataType | /usr/bin/grep WarnAboutFraudulentWebsites | /usr/bin/tr -d ' ' 2> /dev/null)\nif [[ -n \"$output\" ]]; then\nif [[ \"$output\" = \"WarnAboutFraudulentWebsites = 1;\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi\nelse\noutput2=$(/usr/bin/sudo -u \"$(whoami)\" /usr/bin/defaults read /Users/\"$(whoami)\"/Library/Containers/com.apple.Safari/Data/Library/Preferences/com.apple.Safari WarnAboutFraudulentWebsites 2> /dev/null)\nif [[ \"$output2\" = \"0\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "6.3.4",
+      "title": "Ensure Prevent Cross-site Tracking in Safari Is Enabled",
+      "command": "policy1=$(/usr/bin/sudo /usr/sbin/system_profiler SPConfigurationProfileDataType | /usr/bin/grep BlockStoragePolicy | /usr/bin/tr -d ' ' 2> /dev/null)\npolicy2=$(/usr/bin/sudo /usr/sbin/system_profiler SPConfigurationProfileDataType | /usr/bin/grep WebKitPreferences.storageBlockingPolicy | /usr/bin/tr -d ' ' 2> /dev/null)\npolicy3=$(/usr/bin/sudo /usr/sbin/system_profiler SPConfigurationProfileDataType | /usr/bin/grep WebKitStorageBlockingPolicy | /usr/bin/tr -d ' ' 2> /dev/null)\nif [[ -n \"$policy1\" ]] && [[ -n \"$policy2\" ]] && [[ -n \"$policy3\" ]]; then\nif [[ \"$policy1\" == \"BlockStoragePolicy=2;\" ]] && [[ \"$policy2\" == \"WebKitPreferences.storageBlockingPolicy=1;\" ]] && [[ \"$policy3\" == \"WebKitStorageBlockingPolicy=1;\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi\nelse\npolicy1=$(/usr/bin/sudo -u \"$(whoami)\" /usr/bin/defaults read /Users/\"$(whoami)\"/Library/Containers/com.apple.Safari/Data/Library/Preferences/com.apple.Safari BlockStoragePolicy 2> /dev/null)\npolicy2=$(/usr/bin/sudo -u \"$(whoami)\" /usr/bin/defaults read /Users/\"$(whoami)\"/Library/Containers/com.apple.Safari/Data/Library/Preferences/com.apple.Safari WebKitPreferences.storageBlockingPolicy 2> /dev/null)\npolicy3=$(/usr/bin/sudo -u \"$(whoami)\" /usr/bin/defaults read /Users/\"$(whoami)\"/Library/Containers/com.apple.Safari/Data/Library/Preferences/com.apple.Safari WebKitStorageBlockingPolicy 2> /dev/null)\nif [[ \"$policy1\" == \"2\" ]] && [[ \"$policy2\" == \"1\" ]] && [[ \"$policy3\" == \"1\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "6.3.6",
+      "title": "Ensure Advertising Privacy Protection in Safari Is Enabled",
+      "command": "output=$(/usr/bin/sudo /usr/sbin/system_profiler SPConfigurationProfileDataType | /usr/bin/grep \"WebKitPreferences.privateClickMeasurementEnabled\" | /usr/bin/tr -d ' ' 2> /dev/null)\nif [[ -n \"$output\" ]] && [[ \"$output\" == \"\\\"WebKitPreferences.privateClickMeasurementEnabled\\\" = 1;\" ]]; then\necho \"true\"\nelse\noutput=$(/usr/bin/sudo -u \"$(whoami)\" /usr/bin/defaults read /Users/\"$(whoami)\"/Library/Containers/com.apple.Safari/Data/Library/Preferences/com.apple.Safari WebKitPreferences.privateClickMeasurementEnabled 2> /dev/null)\nif [[ \"$output\" == \"1\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "6.3.7",
+      "title": "Ensure Show Full Website Address in Safari Is Enabled",
+      "command": "output=$(/usr/bin/sudo /usr/sbin/system_profiler SPConfigurationProfileDataType | /usr/bin/grep ShowFullURLInSmartSearchField | /usr/bin/tr -d ' ' 2> /dev/null)\nif [[ -n \"$output\" ]] && [[ \"$output\" == \"ShowFullURLInSmartSearchField=1;\" ]]; then\necho \"true\"\nelse\noutput=$(/usr/bin/sudo -u \"$(whoami)\" /usr/bin/defaults read /Users/\"$(whoami)\"/Library/Containers/com.apple.Safari/Data/Library/Preferences/com.apple.Safari ShowFullURLInSmartSearchField 2> /dev/null)\nif [[ \"$output\" == \"1\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "6.3.9",
+      "title": "Ensure Pop-up Windows Are Blocked",
+      "command": "output=$(/usr/bin/sudo /usr/sbin/system_profiler SPConfigurationProfileDataType | /usr/bin/grep safariAllowPopups | /usr/bin/tr -d ' ')\nif [[ -n \"$output\" ]] && [[ \"$output\" == \"safariAllowPopups=0;\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "6.3.10",
+      "title": "Ensure Javascript Is Enabled",
+      "command": "output=$(/usr/bin/sudo /usr/sbin/system_profiler SPConfigurationProfileDataType | /usr/bin/grep WebKitPreferences.javaScriptEnabled | /usr/bin/tr -d ' ')\nif [[ -n \"$output\" ]] && [[ \"$output\" == \"WebKitPreferences.javaScriptEnabled = 1;\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "6.3.11",
+      "title": "Ensure Show Status Bar Is Enabled",
+      "command": "output=$(/usr/bin/sudo /usr/sbin/system_profiler SPConfigurationProfileDataType | /usr/bin/grep ShowOverlayStatusBar | /usr/bin/tr -d ' ')\nif [[ -n \"$output\" ]] && [[ \"$output\" == \"ShowOverlayStatusBar = 1;\" ]]; then\n  echo \"true\"\nelse\necho \"false\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "6.4.1",
+      "title": "Ensure Secure Keyboard Entry Terminal.app Is Enabled",
+      "command": "output=$(/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.Terminal')\n.objectForKey('SecureKeyboardEntry').js\nEOS\n)\nif [[ -n \"$output\" ]] && [[ \"$output\" == \"true\" ]]; then\necho \"true\"\nelse\noutput=$(/usr/bin/sudo -u \"$(whoami)\" /usr/bin/defaults read -app Terminal SecureKeyboardEntry)\nif [[ \"$output\" == \"1\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi\nfi",
+      "expected_output": "true"
     }
   ],
   "MacOS Sonoma": [
   ]
 }
+
 
 
 

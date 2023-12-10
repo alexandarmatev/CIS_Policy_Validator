@@ -18,7 +18,7 @@ class AuditCommandManager:
         _workbook_version_path (str): Path to the workbook file version specific to the OS version.
         _audit_commands (List[Dict]): List of audit command dictionaries specific to the OS version.
     """
-    def __init__(self, *, config_path, commands_path):
+    def __init__(self, *, config_path: str, commands_path: str):
         """
         Initializes the AuditCommandManager with configuration and commands paths.
         It loads configuration and audit commands specific to the given or current OS version.
