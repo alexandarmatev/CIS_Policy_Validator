@@ -1,6 +1,6 @@
 import dataclasses
 import unittest
-from DataModels import Recommendation, RecommendHeader
+from DataModels import Recommendation, RecommendHeader, AuditCmd, CISControl, CISControlFamily
 
 
 def run_tests(test_class):
@@ -18,7 +18,7 @@ class TestRecommendation(unittest.TestCase):
         self.impact = 'Impact Statement'
         self.safeguard_id = '7.3'
         self.assessment_method = 'Automated'
-        self.audit_cmd = 'ls -l | grep -q "audit"'
+        self.audit_cmd = AuditCmd(command='ls -l', expected_output='rw-r-x folder1')
 
     def create_recommendation(self):
         return Recommendation(recommend_id=self.recommend_id,
@@ -112,27 +112,27 @@ class TestRecommendation(unittest.TestCase):
 
 class TestRecommendHeader(unittest.TestCase):
     def setUp(self):
-        self.header_id = 'H-1.1.1'
+        self.recommend_id = 'H-1.1.1'
         self.level = 1
         self.title = 'Header Title'
         self.description = 'Header Description'
 
     def create_recommend_header(self):
-        return RecommendHeader(header_id=self.header_id,
+        return RecommendHeader(recommend_id=self.recommend_id,
                                level=self.level,
                                title=self.title,
                                description=self.description)
 
     def test_create_recommend_header(self):
         recommend_header = self.create_recommend_header()
-        self.assertEqual(self.header_id, recommend_header.header_id)
+        self.assertEqual(self.recommend_id, recommend_header.recommend_id)
         self.assertEqual(self.level, recommend_header.level)
         self.assertEqual(self.title, recommend_header.title)
         self.assertEqual(self.description, recommend_header.description)
 
     def test_create_invalid_types(self):
         invalid_values = {
-            'header_id': 1,
+            'recommend_id': 1,
             'level': '1',
             'title': 1,
             'description': 1,
@@ -144,12 +144,12 @@ class TestRecommendHeader(unittest.TestCase):
 
     def test_missing_required_attributes(self):
         with self.assertRaises(TypeError):
-            RecommendHeader(header_id=self.header_id,
+            RecommendHeader(recommend_id=self.recommend_id,
                             level=self.level,
                             title=self.title)
 
     def test_immutability_recommend_header(self):
-        header = RecommendHeader(header_id='H-1.1.1',
+        header = RecommendHeader(recommend_id='H-1.1.1',
                                  level=1,
                                  title='Header Title',
                                  description='Header Description')
@@ -158,7 +158,7 @@ class TestRecommendHeader(unittest.TestCase):
 
     def test_edge_case_long_title(self):
         long_title = 'a' * 1000
-        recommendation = RecommendHeader(header_id=self.header_id,
+        recommendation = RecommendHeader(recommend_id=self.recommend_id,
                                          level=self.level,
                                          title=long_title,
                                          description=self.description)
@@ -174,6 +174,162 @@ class TestRecommendHeader(unittest.TestCase):
         self.assertEqual(len(header_set), 1)
 
 
+class TestAuditCmd(unittest.TestCase):
+    def setUp(self):
+        self.command = "ls -l | grep -q 'auditcmd'"
+        self.expected_output = "true"
+
+    def create_auditcmd(self):
+        return AuditCmd(command=self.command, expected_output=self.expected_output)
+
+    def test_create_auditcmd(self):
+        audit_cmd = self.create_auditcmd()
+        self.assertEqual(self.command, audit_cmd.command)
+        self.assertEqual(self.expected_output, audit_cmd.expected_output)
+
+    def test_create_invalid_types(self):
+        invalid_values = {
+            'command': 1,
+            'expected_output': 1
+        }
+        for attr, invalid_value in invalid_values.items():
+            setattr(self, attr, invalid_value)
+            with self.assertRaises(TypeError):
+                self.create_auditcmd()
+
+    def test_missing_required_attributes(self):
+        with self.assertRaises(TypeError):
+            AuditCmd(command=self.command)
+
+    def test_immutability_auditcmd(self):
+        audit_cmd = AuditCmd(command=self.command, expected_output=self.expected_output)
+        with self.assertRaises(dataclasses.FrozenInstanceError):
+            audit_cmd.command = 'New Command'
+
+    def test_edge_case_long_cmd(self):
+        long_cmd = 'a' * 1000
+        audit_cmd = AuditCmd(command=long_cmd, expected_output='true')
+        self.assertEqual(long_cmd, audit_cmd.command)
+
+    def test_equality_of_instances(self):
+        audit_cmd1 = self.create_auditcmd()
+        audit_cmd2 = self.create_auditcmd()
+        self.assertEqual(audit_cmd1, audit_cmd2)
+
+    def test_hashability(self):
+        audit_cmd_set = {self.create_auditcmd(), self.create_auditcmd()}
+        self.assertEqual(len(audit_cmd_set), 1)
+
+
+class TestCISControl(unittest.TestCase):
+    def setUp(self):
+        self.safeguard_id = '1.1.1'
+        self.asset_type = 'devices'
+        self.domain = 'detect'
+        self.title = 'CISControl Title'
+        self.description = 'CISControl Description'
+
+    def create_cis_control(self):
+        return CISControl(safeguard_id=self.safeguard_id, asset_type=self.asset_type,
+                          domain=self.domain, title=self.title, description=self.description)
+
+    def test_create_cis_control(self):
+        cis_control = self.create_cis_control()
+        self.assertEqual(self.safeguard_id, cis_control.safeguard_id)
+        self.assertEqual(self.asset_type, cis_control.asset_type)
+        self.assertEqual(self.domain, cis_control.domain)
+        self.assertEqual(self.title, cis_control.title)
+        self.assertEqual(self.description, cis_control.description)
+
+    def test_create_invalid_types(self):
+        invalid_values = {
+            'safeguard_id': 1,
+            'asset_type': 1,
+            'domain': 1,
+            'title': 1,
+            'description': 1
+        }
+        for attr, invalid_value in invalid_values.items():
+            setattr(self, attr, invalid_value)
+            with self.assertRaises(TypeError):
+                self.create_cis_control()
+
+    def test_missing_required_attributes(self):
+        with self.assertRaises(TypeError):
+            CISControl(safeguard_id=self.safeguard_id, asset_type=self.asset_type, domain=self.domain, title=self.title)
+
+    def test_immutability_cis_control(self):
+        cis_control = CISControl(safeguard_id=self.safeguard_id, asset_type=self.asset_type,
+                                 domain=self.domain, title=self.title, description=self.description)
+        with self.assertRaises(dataclasses.FrozenInstanceError):
+            cis_control.safeguard_id = '1.2.3'
+
+    def test_edge_case_long_cis_control_title(self):
+        long_cis_control_title = 'a' * 1000
+        cis_control = CISControl(safeguard_id=self.safeguard_id, asset_type=self.asset_type,
+                                 domain=self.domain, title=long_cis_control_title, description=self.description)
+        self.assertEqual(long_cis_control_title, cis_control.title)
+
+    def test_equality_of_instances(self):
+        cis_control1 = self.create_cis_control()
+        cis_control2 = self.create_cis_control()
+        self.assertEqual(cis_control1, cis_control2)
+
+    def test_hashability(self):
+        cis_control_set = {self.create_cis_control(), self.create_cis_control()}
+        self.assertEqual(len(cis_control_set), 1)
+
+
+class TestCISControlFamily(unittest.TestCase):
+    def setUp(self):
+        self.title = 'CISControlFamily Title'
+        self.description = 'CISControlFamily Description'
+
+    def create_cis_control_family(self):
+        return CISControlFamily(title=self.title, description=self.description)
+
+    def test_create_cis_control_family(self):
+        cis_control_family = self.create_cis_control_family()
+        self.assertEqual(self.title, cis_control_family.title)
+        self.assertEqual(self.description, cis_control_family.description)
+
+    def test_create_invalid_types(self):
+        invalid_values = {
+            'title': 1,
+            'description': 1
+        }
+        for attr, invalid_value in invalid_values.items():
+            setattr(self, attr, invalid_value)
+            with self.assertRaises(TypeError):
+                self.create_cis_control_family()
+
+    def test_missing_required_attributes(self):
+        with self.assertRaises(TypeError):
+            CISControlFamily(title=self.title)
+
+    def test_immutability_cis_control_family(self):
+        cis_control_family = CISControlFamily(title=self.title, description=self.description)
+        with self.assertRaises(dataclasses.FrozenInstanceError):
+            cis_control_family.title = 'New CISControlFamily Title'
+
+    def test_edge_case_long_cis_control_family(self):
+        long_cis_control_family_title = 'a' * 1000
+        cis_control_family = CISControlFamily(title=long_cis_control_family_title, description=self.description)
+        self.assertEqual(long_cis_control_family_title, cis_control_family.title)
+
+    def test_equality_of_instances(self):
+        cis_control_family1 = self.create_cis_control_family()
+        cis_control_family2 = self.create_cis_control_family()
+        self.assertEqual(cis_control_family1, cis_control_family2)
+
+    def test_hashability(self):
+        cis_control_family_set = {self.create_cis_control_family(), self.create_cis_control_family()}
+        self.assertEqual(len(cis_control_family_set), 1)
+
+
 if __name__ == '__main__':
     run_tests(TestRecommendation)
     run_tests(TestRecommendHeader)
+    run_tests(TestAuditCmd)
+    run_tests(TestCISControl)
+    run_tests(TestCISControlFamily)
