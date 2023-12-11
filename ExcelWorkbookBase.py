@@ -1,10 +1,12 @@
-from typing import Set
+from typing import Set, Dict, Iterator, Tuple
 import openpyxl
+from openpyxl.worksheet.worksheet import Worksheet
 from utils.config_load_utils import load_config
 from utils.validation_utils import validate_and_return_file_path
+from abc import ABC, abstractmethod
 
 
-class ExcelWorkbookBase:
+class ExcelWorkbookBase(ABC):
     """
     Base class for managing Excel workbooks. Provides common properties and methods
     for handling Excel workbook operations and configuration management.
@@ -120,6 +122,10 @@ class ExcelWorkbookBase:
             missing_columns = required_columns.difference(columns_to_check)
             raise AttributeError(f"The following columns do not exist in the worksheet: '{', '.join(missing_columns)}'.")
         return True
+
+    @abstractmethod
+    def _get_worksheet_row_attributes(self, worksheet: Worksheet, column_indices: Dict[str, int]) -> Iterator[Tuple[str, str, str, bool]]:
+        pass
 
     def _validate_and_return_sheet_name(self, sheet_name: str) -> str:
         """
