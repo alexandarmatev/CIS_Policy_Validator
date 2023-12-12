@@ -3,6 +3,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 from ExcelWorkbookBase import ExcelWorkbookBase
 from DataModels import CISControl, CISControlFamily
 from collections import namedtuple
+from collections import Counter
 
 
 class CISControlManager(ExcelWorkbookBase):
@@ -144,6 +145,12 @@ class CISControlManager(ExcelWorkbookBase):
             A dictionary of CISControlFamily instances representing all control families.
         """
         return self._control_families
+
+    def get_all_control_domains_weight(self):
+        control_domains = Counter([control.domain for control in self._cache['All Controls']])
+        total = sum(control_domains.values())
+        percentages = {key: round((value / total) * 100, 2) for key, value in control_domains.items()}
+        return percentages
 
     def __repr__(self) -> str:
         """

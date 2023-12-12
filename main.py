@@ -1,6 +1,7 @@
 from CISBenchmarkManager import CISBenchmarkManager
 from CISControlManager import CISControlManager
 from AuditCommandManager import AuditCommandManager
+from ReportManager import ReportManager
 from constants.constants import WORKBOOKS_CONFIG_PATH, JSON_COMMANDS_PATH, CIS_CONTROLS_PATH
 
 audit_manager = AuditCommandManager(config_path=WORKBOOKS_CONFIG_PATH, commands_path=JSON_COMMANDS_PATH)
@@ -9,13 +10,21 @@ config_path = audit_manager.config_path
 cis_control_manager = CISControlManager(workbook_path=CIS_CONTROLS_PATH, config_path=config_path)
 workbook = CISBenchmarkManager(workbook_path=workbook_path, config_path=config_path, audit_manager=audit_manager, cis_control_manager=cis_control_manager)
 
+all_domains_weight = cis_control_manager.get_all_control_domains_weight()
 evaluated_recommendations = workbook.evaluate_recommendations_compliance(scope_level=1)
 
-for recommendation in evaluated_recommendations:
-    if recommendation.compliant:
-        print(f'[+] {recommendation.title} - {recommendation.compliant} - {recommendation.cis_control.title}')
-    else:
-        print(f'[-] {recommendation.title} - {recommendation.compliant} - {recommendation.cis_control.title}')
+report_manager = ReportManager(evaluated_recommendations, all_domains_weight)
+
+report_manager._create_domains_weight_pie_chart()
+report_manager._create_compliant_recommendations_bar_chart()
+
+# print(report_manager.get_compliant_recommendations_percentage())
+
+# for recommendation in evaluated_recommendations:
+#     if recommendation.compliant:
+#         print(f'[+] {recommendation.title} - {recommendation.compliant} - {recommendation.cis_control.title}')
+#     else:
+#         print(f'[-] {recommendation.title} - {recommendation.compliant} - {recommendation.cis_control.title}')
 
 # print(workbook.get_all_levels_recommendations())
 # print(workbook.get_all_scopes_recommendation_headers())
