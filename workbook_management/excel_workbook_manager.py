@@ -1,13 +1,15 @@
+from abc import ABC, abstractmethod
 from typing import Set, Dict, Iterator, Tuple
 from openpyxl.worksheet.worksheet import Worksheet
-from utils.validation_utils import validate_and_return_file_path
-from abc import ABC, abstractmethod
+from workbook_management.interfaces import IWorkbookLoader, IConfigLoader
 
 
 class ExcelOpenWorkbook(ABC):
-    def __init__(self, workbook_path: str, config_path: str):
-        self._workbook_path = validate_and_return_file_path(workbook_path, 'xlsx')
-        self._config_path = validate_and_return_file_path(config_path, 'json')
+    def __init__(self, workbook_loader: IWorkbookLoader, config_loader: IConfigLoader):
+        self._workbook_loader = workbook_loader
+        self._config_loader = config_loader
+        self._workbook = self.load_workbook()
+        self._config = self.load_config()
 
     @abstractmethod
     def load_workbook(self):

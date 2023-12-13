@@ -1,5 +1,7 @@
+import json
+import openpyxl
 from DataModels import Recommendation, RecommendHeader, AuditCmd
-from ExcelWorkbookBase import ExcelWorkbookBase
+from ExcelWorkbookBase import ExcelOpenWorkbook
 from AuditCommandManager import AuditCommandManager
 from CISControlManager import CISControlManager
 import re
@@ -8,31 +10,11 @@ from openpyxl.worksheet.worksheet import Worksheet
 from typing import Dict, Tuple, Set, List, Iterator, Generator
 
 
-class CISBenchmarkManager(ExcelWorkbookBase):
-    """
-    Manages and processes CIS (Center for Internet Security) benchmarks within an Excel workbook.
-    Inherits from ExcelWorkbookBase and utilizes an AuditCommandManager instance to determine
-    the correct workbook path based on the OS system version. Assumes a constant configuration path.
-
-    Attributes inherited from ExcelWorkbookBase:
-        _workbook_path (str): Path to the Excel workbook file.
-        _workbook (openpyxl.Workbook): Instance of the openpyxl Workbook.
-        _config_path (str): Path to the JSON configuration file.
-        _config (dict): Configuration data specific to the class instance.
-        _cache (dict): Cache for storing processed data.
-    """
+class CISBenchmarkManager(ExcelOpenWorkbook):
     def __init__(self, *, workbook_path: str, config_path: str, audit_manager: AuditCommandManager, cis_control_manager: CISControlManager):
-        """
-        Initializes the CISBenchmarkManager with an audit manager which determines the appropriate
-        workbook path based on the current OS system version. Utilizes a constant configuration path.
-
-        Parameters:
-            workbook_path: The path to the Excel workbook.
-            config_path: The path to the JSON configuration file.
-            audit_manager: An instance of AuditCommandManager responsible for managing audit commands and determining the correct workbook path.
-            cis_control_manager: An instance of CISControlManager responsible for managing and accessing CIS control data.
-        """
         super().__init__(workbook_path, config_path)
+        self._workbook = self.load_workbook()
+        self._config = self.load_config()
         self._audit_manager = audit_manager
         self._cis_control_manager = cis_control_manager
         self._benchmark_profiles = self._get_benchmark_profiles()
@@ -41,6 +23,16 @@ class CISBenchmarkManager(ExcelWorkbookBase):
         self._populate_benchmark_cache_and_headers()
         self._map_recommendations_and_cis_controls()
         self._map_recommendations_and_audit_commands()
+
+    def load_workbook(self):
+        return openpyxl.load_workbook(self.workbook_path)
+
+    def load_config(self):
+        try:
+            with open(self.config_path, 'r') as config_file:
+                return json.load(config_file)[__class__.__name__]
+        except json.JSONDecodeError as e:
+            raise ValueError(f'Error parsing JSON file at {self.config_path}: {e}')
 
     @property
     def benchmark_profiles(self) -> List[Tuple]:
@@ -70,7 +62,7 @@ class CISBenchmarkManager(ExcelWorkbookBase):
         Returns:
             A dictionary mapping scope level integers to their titles.
         """
-        return {int(level): title for level, title in self.config['SCOPE_LEVELS'].items()}
+        return {int(level): title for level, title in self._config['SCOPE_LEVELS'].items()}
 
     @property
     def allowed_assessment_methods(self) -> Set:
@@ -80,7 +72,7 @@ class CISBenchmarkManager(ExcelWorkbookBase):
         Returns:
             A set of allowed assessment methods.
         """
-        return self.config['ALLOWED_ASSESSMENT_METHODS']
+        return self._config['ALLOWED_ASSESSMENT_METHODS']
 
     @property
     def benchmark_profiles_rex(self) -> str:
@@ -90,7 +82,7 @@ class CISBenchmarkManager(ExcelWorkbookBase):
         Returns:
             A string representing the regular expression for benchmark profiles.
         """
-        return self.config['BENCHMARK_PROFILES_REX']
+        return self._config['BENCHMARK_PROFILES_REX']
 
     @property
     def recommendation(self) -> str:
@@ -110,7 +102,7 @@ class CISBenchmarkManager(ExcelWorkbookBase):
         Returns:
             Rationale key.
         """
-        return self.config['RATIONALE']
+        return self._config['RATIONALE']
 
     @property
     def impact(self) -> str:
@@ -120,7 +112,7 @@ class CISBenchmarkManager(ExcelWorkbookBase):
         Returns:
             Impact key.
         """
-        return self.config['IMPACT']
+        return self._config['IMPACT']
 
     @property
     def assess_status(self) -> str:
@@ -130,7 +122,7 @@ class CISBenchmarkManager(ExcelWorkbookBase):
         Returns:
             Assessment status key.
         """
-        return self.config['ASSESS_STATUS']
+        return self._config['ASSESS_STATUS']
 
     @property
     def section(self) -> str:
@@ -140,7 +132,7 @@ class CISBenchmarkManager(ExcelWorkbookBase):
         Returns:
             Section key.
         """
-        return self.config['SECTION']
+        return self._config['SECTION']
 
     @property
     def overview_sheet(self) -> str:
@@ -150,7 +142,7 @@ class CISBenchmarkManager(ExcelWorkbookBase):
         Returns:
             Name of the overview sheet.
         """
-        return self.config['OVERVIEW_SHEET']
+        return self._config['OVERVIEW_SHEET']
 
     def _get_benchmark_profiles(self) -> list:
         """

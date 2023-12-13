@@ -1,33 +1,26 @@
 from typing import Tuple, Dict, NamedTuple, List
 from openpyxl.worksheet.worksheet import Worksheet
-from ExcelWorkbookBase import ExcelWorkbookBase
+from workbook_management.excel_workbook_manager import ExcelOpenWorkbook
 from DataModels import CISControl, CISControlFamily
 from collections import namedtuple
 from collections import Counter
+from workbook_management.interfaces import IWorkbookLoader, IConfigLoader
 
 
-class CISControlManager(ExcelWorkbookBase):
-    """
-    CISControlManager is a class that extends ExcelWorkbookBase, specialized in managing CIS Controls
-    within an Excel workbook. It handles the extraction and organization of CIS control data.
-
-    Attributes:
-        _control_families (dict): A dictionary to store CIS control families.
-        _cache (dict): A cache to store all CIS controls.
-    """
-
-    def __init__(self, workbook_path: str, config_path: str):
-        """
-        Initializes the CISControlManager with paths to an Excel workbook and a JSON configuration file.
-
-        Parameters:
-            workbook_path: Path to the Excel workbook.
-            config_path: Path to the configuration file.
-        """
-        super().__init__(workbook_path, config_path)
+class CISControlManager(ExcelOpenWorkbook):
+    def __init__(self, workbook_loader: IWorkbookLoader, config_loader: IConfigLoader, workbook_path: str, config_path: str):
+        self._workbook_path = workbook_path
+        self._config_path = config_path
+        super().__init__(workbook_loader, config_loader)
         self._control_families = {}
         self._cache = {'All Controls': []}
         self._populate_controls_cache()
+
+    def load_workbook(self):
+        return self._workbook_loader.load(self._workbook_path)
+
+    def load_config(self):
+        return self._config_loader.load(self._config_path)[__class__.__name__]
 
     @property
     def worksheet_name(self) -> str:
@@ -37,7 +30,7 @@ class CISControlManager(ExcelWorkbookBase):
         Returns:
             The name of the worksheet containing CIS control data.
         """
-        return self.config['WORKSHEET_NAME']
+        return self._config['WORKSHEET_NAME']
 
     @property
     def asset_type(self) -> str:
@@ -47,7 +40,7 @@ class CISControlManager(ExcelWorkbookBase):
         Returns:
             The key for the asset type column in the worksheet.
         """
-        return self.config['ASSET_TYPE']
+        return self._config['ASSET_TYPE']
 
     @property
     def domain(self) -> str:
@@ -57,7 +50,7 @@ class CISControlManager(ExcelWorkbookBase):
         Returns:
             The key for the domain column in the worksheet.
         """
-        return self.config['DOMAIN']
+        return self._config['DOMAIN']
 
     @property
     def control_family_id(self) -> str:
@@ -67,7 +60,7 @@ class CISControlManager(ExcelWorkbookBase):
         Returns:
             The key for the control family ID column in the worksheet.
         """
-        return self.config['CONTROL_FAMILY_ID']
+        return self._config['CONTROL_FAMILY_ID']
 
     def _get_worksheet_scope_headers(self) -> Tuple[Worksheet, Dict[str, int]]:
         """
