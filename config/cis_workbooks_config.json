@@ -4,7 +4,7 @@
     "COMMANDS_JSON_PATH": "config/audit_commands.json",
     "CIS_CONTROLS_PATH": "cis_controls/CIS_Controls_Version_8.xlsx"
   },
-  "CISBenchmarkManager": {
+  "CISBenchmarksManager": {
     "SCOPE_LEVELS": {"1":  "Level 1", "2":  "Level 2"},
     "ALLOWED_ASSESSMENT_METHODS": ["manual", "automated"],
     "BENCHMARK_PROFILES_REX": "(Level\\s(\\d)\\s-\\s\\w+ \\d+\\.\\d{1,2}(?:\\s\\w+)*)",
@@ -20,7 +20,7 @@
     "REQUIRED_COLUMN_TITLES": ["Section #", "Recommendation #", "Title", "Assessment Status", "Description", "Rationale Statement", "Impact Statement", "CIS Safeguards 1 (v8)"],
     "COMMANDS_JSON_PATH": "config/audit_commands.json"
   },
-  "CISControlManager": {
+  "CISControlsConfig": {
     "WORKSHEET_NAME": "Controls V8",
     "SAFEGUARD": "CIS Safeguard",
     "CONTROL_FAMILY_ID": "CIS Control",

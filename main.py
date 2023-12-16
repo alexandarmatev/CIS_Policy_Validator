@@ -1,10 +1,10 @@
-from CISBenchmarkManager import CISBenchmarkManager
-from CISControlManager import CISControlManager
+from CISBenchmarksManager import CISBenchmarkManager
+from CISControlsManager import CISControlsProcessWorkbook, CISControlsLoadConfig
 from AuditCommandManager import AuditCommandManager
 from ReportManager import ReportManager
-from constants.constants import WORKBOOKS_CONFIG_PATH, JSON_COMMANDS_PATH, CIS_CONTROLS_PATH
+from constants.constants import WORKBOOKS_CONFIG_PATH, JSON_COMMANDS_PATH
 from workbook_management.loaders import OpenPyXLWorkbookLoader
-from workbook_management.loaders import JSONConfigLoader
+from config_management.loaders import JSONConfigLoader
 
 workbook_loader = OpenPyXLWorkbookLoader()
 config_loader = JSONConfigLoader()
@@ -14,10 +14,17 @@ audit_manager = AuditCommandManager(config_path=WORKBOOKS_CONFIG_PATH, commands_
 workbook_path = audit_manager.workbook_path
 config_path = audit_manager.config_path
 
-cis_control_manager = CISControlManager(workbook_loader=workbook_loader, config_loader=config_loader, workbook_path=CIS_CONTROLS_PATH, config_path=config_path)
-workbook = CISBenchmarkManager(workbook_path=workbook_path, config_path=config_path, audit_manager=audit_manager, cis_control_manager=cis_control_manager)
+cis_controls_config = CISControlsLoadConfig(config_loader=config_loader,
+                                            config_path='config/cis_workbooks_config.json')
 
-all_domains_weight = cis_control_manager.get_all_control_domains_weight()
+excel_workbook_loader = OpenPyXLWorkbookLoader()
+cis_controls_processor = CISControlsProcessWorkbook(workbook_loader=excel_workbook_loader,
+                                                    workbook_path='cis_controls/CIS_Controls_Version_8.xlsx',
+                                                    controls_config=cis_controls_config)
+workbook = CISBenchmarkManager(workbook_path=workbook_path, config_path=config_path, audit_manager=audit_manager,
+                               cis_control_manager=cis_controls_processor)
+
+all_domains_weight = cis_controls_processor.get_all_control_domains_weight()
 evaluated_recommendations = workbook.evaluate_recommendations_compliance(scope_level=1)
 print(list(evaluated_recommendations))
 

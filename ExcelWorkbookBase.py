@@ -5,9 +5,8 @@ from abc import ABC, abstractmethod
 
 
 class ExcelOpenWorkbook(ABC):
-    def __init__(self, workbook_path: str, config_path: str):
+    def __init__(self, workbook_path: str):
         self._workbook_path = validate_and_return_file_path(workbook_path, 'xlsx')
-        self._config_path = validate_and_return_file_path(config_path, 'json')
 
     @abstractmethod
     def load_workbook(self):
@@ -19,22 +18,10 @@ class ExcelOpenWorkbook(ABC):
 
     @property
     def config_path(self) -> str:
-        """
-        Gets the path to the JSON configuration file.
-
-        Returns:
-            Path to the configuration file.
-        """
         return self._config_path
 
     @property
     def workbook_path(self) -> str:
-        """
-        Gets the path to the Excel workbook file.
-
-        Returns:
-            Path to the workbook file.
-        """
         return self._workbook_path
 
     @property
@@ -121,3 +108,11 @@ class ExcelOpenWorkbook(ABC):
         if sheet_name not in sheetnames_list:
             raise ValueError(f'"{sheet_name}" is not in the sheet names. Possible sheet names: {sheetnames_list}.')
         return sheet_name
+
+
+class OpenConfig(ABC):
+    def __init__(self, config_path: str):
+        self._config_path = validate_and_return_file_path(config_path, 'json')
+
+
+
