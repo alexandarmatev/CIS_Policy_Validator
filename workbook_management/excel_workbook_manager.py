@@ -6,10 +6,10 @@ from workbook_management.interfaces import IWorkbookLoader
 class ExcelOpenWorkbook(ABC):
     def __init__(self, workbook_loader: IWorkbookLoader):
         self._workbook_loader = workbook_loader
-        self._workbook = self.load_workbook()
+        self._workbook = self._load_workbook()
 
     @abstractmethod
-    def load_workbook(self):
+    def _load_workbook(self):
         pass
 
 

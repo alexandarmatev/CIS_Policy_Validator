@@ -5,10 +5,10 @@ from config_management.interfaces import IConfigLoader
 class OpenConfig(ABC):
     def __init__(self, config_loader: IConfigLoader):
         self._config_loader = config_loader
-        self._config = self.load_config()
+        self._config = self._load_config()
 
     @abstractmethod
-    def load_config(self):
+    def _load_config(self):
         pass
 
 
@@ -117,10 +117,10 @@ class BenchmarkConfigAttrs(OpenConfig):
 
     @property
     @abstractmethod
-    def required_column_titles(self) -> set:
+    def required_columns(self) -> set:
         pass
 
     @property
     @abstractmethod
-    def commands_json_path(self) -> str:
+    def commands_path(self) -> str:
         pass

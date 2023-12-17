@@ -22,7 +22,7 @@ class CISControlsLoadConfig(ControlsConfigAttrs):
         self._config_title = CISControlsConst.CIS_CONTROLS_CONFIG.value
         super().__init__(config_loader)
 
-    def load_config(self) -> dict:
+    def _load_config(self) -> dict:
         config = self._config_loader.load(self._config_path).get(self._config_title)
         if config:
             return config
@@ -93,7 +93,7 @@ class CISControlsLoadWorkbook(ExcelOpenWorkbook):
         self._workbook_path = validate_and_return_file_path(workbook_path, 'xlsx')
         super().__init__(workbook_loader)
 
-    def load_workbook(self):
+    def _load_workbook(self):
         return self._workbook_loader.load(self._workbook_path)
 
 
@@ -120,39 +120,41 @@ class CISControlsWorkbookValidator(ExcelValidator):
 class CISControlsProcessWorkbook(CISControlsLoadWorkbook):
     def __init__(self, *, workbook_loader: IWorkbookLoader, workbook_path: str, controls_config: CISControlsLoadConfig):
         super().__init__(workbook_loader=workbook_loader, workbook_path=workbook_path)
-        self._cis_controls_config = controls_config
+        self._config = controls_config
         self._excel_validator = CISControlsWorkbookValidator(self._workbook)
         self._cache = {'All Controls': []}
         self._control_families = {}
         self._populate_controls_cache()
 
     def _get_worksheet_scope_headers(self) -> Tuple[Worksheet, Dict[str, int]]:
-        worksheet_name = self._excel_validator.validate_and_return_sheet_name(self._cis_controls_config.worksheet_name)
-        worksheet = self._workbook[worksheet_name]
-        header_row = next(worksheet.iter_rows(min_row=1, max_row=1, values_only=True))
-        column_indices = {title: index for index, title in enumerate(header_row)}
-        return worksheet, column_indices
+        worksheet_name = self._excel_validator.validate_and_return_sheet_name(self._config.worksheet_name)
+        worksheet = self._workbook.get(worksheet_name)
+        if worksheet:
+            header_row = next(worksheet.iter_rows(min_row=1, max_row=1, values_only=True))
+            column_indices = {title: index for index, title in enumerate(header_row)}
+            return worksheet, column_indices
+        raise KeyError(f'"{worksheet}" worksheet cannot be found.')
 
     def _get_worksheet_row_attributes(self, worksheet: Worksheet, column_indices: Dict[str, int]) -> NamedTuple:
         RowData = namedtuple('RowData', ['safeguard_id', 'asset_type', 'domain', 'title', 'description', 'control_family_id', 'is_family'])
-        required_columns = self._cis_controls_config.required_columns
+        required_columns = self._config.required_columns
         if self._excel_validator.validate_column_titles(column_indices, required_columns):
             safeguard_ids = set()
             for row in worksheet.iter_rows(min_row=2, values_only=True):
-                safeguard_id = str(row[column_indices[self._cis_controls_config.cis_safeguard]])
+                safeguard_id = str(row[column_indices[self._config.cis_safeguard]])
                 if safeguard_id in safeguard_ids:
                     safeguard_id += '0'
                 safeguard_ids.add(safeguard_id)
-                asset_type = row[column_indices[self._cis_controls_config.asset_type]]
-                domain = row[column_indices[self._cis_controls_config.domain]]
-                title = row[column_indices[self._cis_controls_config.title]]
-                description = row[column_indices[self._cis_controls_config.description]]
+                asset_type = row[column_indices[self._config.asset_type]]
+                domain = row[column_indices[self._config.domain]]
+                title = row[column_indices[self._config.title]]
+                description = row[column_indices[self._config.description]]
                 control_family_id = None
                 is_family = False
 
                 if not asset_type:
                     is_family = True
-                    control_family_id = str(row[column_indices[self._cis_controls_config.control_family_id]])
+                    control_family_id = str(row[column_indices[self._config.control_family_id]])
 
                 yield RowData(safeguard_id, asset_type, domain, title, description, control_family_id, is_family)
 
