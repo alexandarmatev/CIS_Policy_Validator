@@ -57,7 +57,7 @@ class ControlsConfigAttrs(OpenConfig):
 class BenchmarkConfigAttrs(OpenConfig):
     @property
     @abstractmethod
-    def scope_levels(self) -> dict:
+    def allowed_scope_levels(self) -> dict:
         pass
 
     @property

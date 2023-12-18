@@ -5,7 +5,7 @@
     "CIS_CONTROLS_PATH": "cis_controls/CIS_Controls_Version_8.xlsx"
   },
   "CISBenchmarksManager": {
-    "SCOPE_LEVELS": {"1":  "Level 1", "2":  "Level 2"},
+    "ALLOWED_SCOPE_LEVELS": {"1":  "Level 1", "2":  "Level 2"},
     "ALLOWED_ASSESSMENT_METHODS": ["manual", "automated"],
     "BENCHMARK_PROFILES_REX": "(Level\\s(\\d)\\s-\\s\\w+ \\d+\\.\\d{1,2}(?:\\s\\w+)*)",
     "SECTION": "Section #",

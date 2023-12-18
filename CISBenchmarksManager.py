@@ -19,6 +19,9 @@ from workbook_management.loaders import OpenPyXLWorkbookLoader
 
 class CISBenchmarksConst(Enum):
     CIS_BENCHMARKS_CONFIG = 'CISBenchmarksManager'
+    RECOMMENDATION = 'recommendation'
+    RECOMMEND_HEADER = 'recommend_header'
+    ALLOWED_ITEMS = {RECOMMENDATION, RECOMMEND_HEADER}
 
 
 class CISBenchmarksLoadConfig(BenchmarkConfigAttrs):
@@ -34,8 +37,8 @@ class CISBenchmarksLoadConfig(BenchmarkConfigAttrs):
         raise KeyError('This configuration does not exist within the configuration file.')
 
     @property
-    def scope_levels(self) -> dict:
-        scope_levels = {int(level): title for level, title in self._config.get('SCOPE_LEVELS').items()}
+    def allowed_scope_levels(self) -> dict:
+        scope_levels = {int(level): title for level, title in self._config.get('ALLOWED_SCOPE_LEVELS').items()}
         if scope_levels:
             return scope_levels
         raise KeyError('The key does not exist within the configuration file.')
@@ -153,8 +156,7 @@ class CISBenchmarksWorkbookValidator(ExcelValidator):
         columns_to_check = column_indices.keys()
         if not required_columns.issubset(columns_to_check):
             missing_columns = required_columns.difference(columns_to_check)
-            raise AttributeError(
-                f"The following columns do not exist in the worksheet: '{', '.join(missing_columns)}'.")
+            raise AttributeError(f"The following columns do not exist in the worksheet: '{', '.join(missing_columns)}'.")
         return True
 
     def validate_and_return_sheet_name(self, sheet_name: str) -> str:
@@ -171,25 +173,39 @@ class CISBenchmarksWorkbookValidator(ExcelValidator):
             raise ValueError(f'{curr_scope_level} is not in the scope levels.')
         return curr_scope_level
 
-    def validate_and_return_benchmark_scope_profile(self, curr_scope_level: int, scope_levels_os_mapping: dict) -> str:
-        allowed_scope_levels = set(map(int, scope_levels_os_mapping.keys()))
+    def validate_and_return_benchmark_scope_profile(self, curr_scope_level: int, scope_levels_os_mapping: dict, allowed_scope_levels: set) -> str:
         scope_level = self.validate_and_return_scope_level(curr_scope_level, allowed_scope_levels)
         scope_level_os = scope_levels_os_mapping.get(scope_level)
         if scope_level_os is None:
             raise ValueError(f'Benchmark profile for level {scope_level} does not exist.')
-        return next(iter(scope_level_os))
+        return scope_level_os
+
+    @staticmethod
+    def validate_and_return_item_id(item_id: str) -> str:
+        if not isinstance(item_id, str):
+            raise TypeError(f'item_id must be a string, got {type(item_id).__name__}')
+        return item_id
+
+    @staticmethod
+    def validate_assessment_method_type(assessment_method: str, allowed_assessment_methods: list) -> str:
+        if assessment_method.casefold() not in allowed_assessment_methods:
+            raise ValueError(f"{assessment_method} is not in allowed assessment methods. The allowed assessment methods are: '{allowed_assessment_methods}'.")
+        return assessment_method
 
 
 class CISBenchmarksProcessWorkbook(CISBenchmarksLoadWorkbook):
-    def __init__(self, *, workbook_loader: IWorkbookLoader, workbook_path: str,
-                 benchmarks_config: CISBenchmarksLoadConfig):
+    def __init__(self, *, workbook_loader: IWorkbookLoader, workbook_path: str, benchmarks_config: CISBenchmarksLoadConfig):
         super().__init__(workbook_loader=workbook_loader, workbook_path=workbook_path)
         self._config = benchmarks_config
-        self._excel_validator = CISBenchmarksWorkbookValidator(self._workbook)
+        self._validator = CISBenchmarksWorkbookValidator(self._workbook)
         self._scope_levels_os_mapping = self._get_scope_levels_os_mapping()
+        self._allowed_scope_levels = set(map(int, self._config.allowed_scope_levels.keys()))
+        self._cache = {}
+        self._headers_cache = {}
+        self._populate_benchmark_cache_and_headers()
 
     def _get_overview_worksheet(self) -> Worksheet:
-        sheet_name = self._excel_validator.validate_and_return_sheet_name(self._config.overview_sheet)
+        sheet_name = self._validator.validate_and_return_sheet_name(self._config.overview_sheet)
         overview_worksheet = self._workbook[sheet_name]
         if not overview_worksheet:
             raise KeyError(f'"{sheet_name}" sheet name cannot be found.')
@@ -205,10 +221,112 @@ class CISBenchmarksProcessWorkbook(CISBenchmarksLoadWorkbook):
                 if match:
                     try:
                         os_system, level = match.groups()
-                        scope_levels_os_mapping[level] = os_system
+                        scope_levels_os_mapping[int(level)] = os_system
                     except (IndexError, ValueError) as e:
                         raise ValueError(f'Invalid data format in cell: {cell}. Error: {e}')
         return scope_levels_os_mapping
+
+    def get_items_by_level_and_type(self, *, scope_level: int = 1, item_type: str) -> List[Recommendation]:
+        scope_profile = self._validator.validate_and_return_benchmark_scope_profile(scope_level, self._scope_levels_os_mapping, self._allowed_scope_levels)
+        if item_type == CISBenchmarksConst.RECOMMENDATION.value:
+            cache = self._cache.get(scope_profile)
+            if cache is None:
+                raise KeyError('Cache is empty.')
+            return cache
+        elif item_type == CISBenchmarksConst.RECOMMENDATION.RECOMMEND_HEADER.value:
+            headers_cache = self._headers_cache.get(scope_profile)
+            if headers_cache is None:
+                raise KeyError('Headers cache is empty.')
+            return headers_cache
+        raise ValueError(f'Invalid "{item_type}" item type provided. Allowed item types: {CISBenchmarksConst.ALLOWED_ITEMS.value}')
+
+    def _get_worksheet_scope_headers(self, scope_level: int) -> Tuple[Worksheet, Dict[str, int]]:
+        scope_level = self._validator.validate_and_return_scope_level(scope_level, self._allowed_scope_levels)
+        curr_sheet_level = self._config.allowed_scope_levels[scope_level]
+        sheet_name = self._validator.validate_and_return_sheet_name(curr_sheet_level)
+        worksheet = self._workbook[sheet_name]
+        header_row = next(worksheet.iter_rows(min_row=1, max_row=1, values_only=True))
+        column_indices = {title: index for index, title in enumerate(header_row)}
+        return worksheet, column_indices
+
+    def _get_worksheet_row_attributes(self, worksheet: Worksheet, column_indices: Dict[str, int]) -> Iterator[Tuple[str, str, str, bool]]:
+        if self._validator.validate_column_titles(column_indices, self._config.required_columns):
+            for row in worksheet.iter_rows(min_row=2, values_only=True):
+                recommend_id = row[column_indices[self._config.recommendation]]
+                title = row[column_indices[self._config.title]]
+                description = row[column_indices[self._config.description]]
+                rationale = row[column_indices[self._config.rationale]]
+                impact = row[column_indices[self._config.impact]]
+                safeguard_id = row[column_indices[self._config.safeguard]]
+                assessment_method = row[column_indices[self._config.assessment_status]]
+                is_header = False
+
+                if not assessment_method:
+                    is_header = True
+                    recommend_id = row[column_indices[self._config.section]]
+
+                yield recommend_id, title, description, rationale, impact, safeguard_id, assessment_method, is_header
+
+    def _get_worksheet_all_scopes_row_attributes(self) -> Generator:
+        all_scopes_mapping = self._scope_levels_os_mapping.items()
+        for level, benchmark_profile in all_scopes_mapping:
+            worksheet, column_indices = self._get_worksheet_scope_headers(level)
+            worksheet_row_attrs = self._get_worksheet_row_attributes(worksheet, column_indices)
+            yield level, benchmark_profile, worksheet_row_attrs
+
+    def _initialize_cache_and_headers_keys(self) -> Tuple[Dict[str, List], Dict[str, List]]:
+        cache_mapping = {}
+        headers_mapping = {}
+        for _, profile in self._scope_levels_os_mapping.items():
+            cache_mapping[profile] = []
+            headers_mapping[profile] = []
+        return cache_mapping, headers_mapping
+
+    def _populate_benchmark_cache_and_headers(self):
+        self._cache, self._headers = self._initialize_cache_and_headers_keys()
+        all_scopes_attributes = self._get_worksheet_all_scopes_row_attributes()
+        for level, profile, worksheet_row_attrs in all_scopes_attributes:
+            for recommend_id, title, description, rationale, impact, safeguard_id, assessment_method, is_header in worksheet_row_attrs:
+                if is_header:
+                    header = RecommendHeader(recommend_id=recommend_id, level=level, title=title, description=description)
+                    self._headers[profile].append(header)
+                else:
+                    recommendation = Recommendation(recommend_id=recommend_id, level=level, title=title,
+                                                    rationale=rationale,
+                                                    impact=impact, safeguard_id=safeguard_id,
+                                                    assessment_method=assessment_method)
+                    self._cache[profile].append(recommendation)
+
+    def get_recommendation_by_id(self, *, scope_level: int = 1, item_id: str) -> Recommendation:
+        scope_level = self._validator.validate_and_return_scope_level(scope_level, self._allowed_scope_levels)
+        item_id = self._validator.validate_and_return_item_id(item_id)
+        scope_items = self._cache.get(scope_level)
+
+        if scope_items is None:
+            raise KeyError(f'Scope items for level {scope_level} cannot be found.')
+
+        for item in scope_items:
+            if item_id == item.recommend_id:
+                return item
+        raise KeyError(f'Recommendation with ID {item_id} is not in level {scope_level} of recommendations.')
+
+    def get_all_levels_recommendations(self) -> Dict[str, List[Dict[str, Recommendation]]]:
+        return self._cache
+
+    def get_all_scopes_recommendation_headers(self) -> Dict[str, List[RecommendHeader]]:
+        return self._headers
+
+    def get_recommendations_by_level(self, *, scope_level: int = 1) -> List[Recommendation]:
+        scope_level = self._validator.validate_and_return_scope_level(scope_level, self._allowed_scope_levels)
+        scope_profile = self._validator.validate_and_return_benchmark_scope_profile(scope_level, self._scope_levels_os_mapping, self._allowed_scope_levels)
+        return self._cache[scope_profile]
+
+    def get_recommendations_by_assessment_method(self, *, scope_level: int = 1, assessment_method: str = None) -> Generator:
+        assessment_method = self._validator.validate_assessment_method_type(assessment_method, self._config.allowed_assessment_methods)
+        recommendations_scope = self.get_recommendations_by_level(scope_level=scope_level)
+        for recommendation in recommendations_scope:
+            if assessment_method == recommendation.assessment_method.casefold():
+                yield recommendation
 
 
 json_config_loader = JSONConfigLoader()
@@ -219,6 +337,11 @@ cis_benchmarks_config = CISBenchmarksLoadConfig(config_loader=json_config_loader
 workbook_processor = CISBenchmarksProcessWorkbook(workbook_loader=openpyxl_workbook_loader,
                                                   workbook_path='cis_benchmarks/CIS_Apple_macOS_13.0_Ventura_Benchmark_v2.0.0.1.xlsx',
                                                   benchmarks_config=cis_benchmarks_config)
+
+print(workbook_processor.get_all_levels_recommendations())
+print(workbook_processor.get_recommendations_by_level(scope_level=2))
+print(workbook_processor.get_recommendations_by_level())
+print(list(workbook_processor.get_recommendations_by_assessment_method(assessment_method='manual')))
 
 
 #
