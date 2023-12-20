@@ -5,7 +5,7 @@ from DataModels import Recommendation, RecommendHeader, AuditCmd
 from config_management.interfaces import IConfigLoader
 from config_management.loaders import JSONConfigLoader
 from workbook_management.excel_workbook_manager import ExcelOpenWorkbook, ExcelValidator
-from AuditCommandManager import AuditCommandManager
+from CISAuditCommandsManager import AuditCommandManager
 from CISControlsManager import CISControlsProcessWorkbook
 import re
 from collections import defaultdict
@@ -13,7 +13,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 from typing import Dict, Tuple, Set, List, Iterator, Generator
 from utils.validation_utils import validate_and_return_file_path
 from workbook_management.interfaces import IWorkbookLoader
-from config_management.config_manager import BenchmarkConfigAttrs
+from config_management.config_manager import BenchmarksConfigAttrs
 from workbook_management.loaders import OpenPyXLWorkbookLoader
 
 
@@ -24,7 +24,7 @@ class CISBenchmarksConst(Enum):
     ALLOWED_ITEMS = {RECOMMENDATION, RECOMMEND_HEADER}
 
 
-class CISBenchmarksLoadConfig(BenchmarkConfigAttrs):
+class CISBenchmarksLoadConfig(BenchmarksConfigAttrs):
     def __init__(self, *, config_path: str, config_loader: IConfigLoader):
         self._config_path = validate_and_return_file_path(config_path, 'json')
         self._config_title = CISBenchmarksConst.CIS_BENCHMARKS_CONFIG.value
@@ -32,107 +32,107 @@ class CISBenchmarksLoadConfig(BenchmarkConfigAttrs):
 
     def _load_config(self) -> dict:
         config = self._config_loader.load(self._config_path).get(self._config_title)
-        if config:
-            return config
-        raise KeyError('This configuration does not exist within the configuration file.')
+        if not config:
+            raise KeyError('The key does not exist within the configuration file.')
+        return config
 
     @property
     def allowed_scope_levels(self) -> dict:
         scope_levels = {int(level): title for level, title in self._config.get('ALLOWED_SCOPE_LEVELS').items()}
-        if scope_levels:
-            return scope_levels
-        raise KeyError('The key does not exist within the configuration file.')
+        if not scope_levels:
+            raise KeyError('The key does not exist within the configuration file.')
+        return scope_levels
 
     @property
     def allowed_assessment_methods(self) -> list:
         allowed_assessment_methods = self._config.get('ALLOWED_ASSESSMENT_METHODS')
-        if allowed_assessment_methods:
-            return allowed_assessment_methods
-        raise KeyError('The key does not exist within the configuration file.')
+        if not allowed_assessment_methods:
+            raise KeyError('The key does not exist within the configuration file.')
+        return allowed_assessment_methods
 
     @property
     def benchmark_profiles_rex(self) -> str:
         benchmark_profiles_rex = self._config.get('BENCHMARK_PROFILES_REX')
-        if benchmark_profiles_rex:
-            return benchmark_profiles_rex
-        raise KeyError('The key does not exist within the configuration file.')
+        if not benchmark_profiles_rex:
+            raise KeyError('The key does not exist within the configuration file.')
+        return benchmark_profiles_rex
 
     @property
     def section(self) -> str:
         section = self._config.get('SECTION')
-        if section:
-            return section
-        raise KeyError('The key does not exist within the configuration file.')
+        if not section:
+            raise KeyError('The key does not exist within the configuration file.')
+        return section
 
     @property
     def recommendation(self) -> str:
         recommendation = self._config.get('RECOMMENDATION')
-        if recommendation:
-            return recommendation
-        raise KeyError('The key does not exist within the configuration file.')
+        if not recommendation:
+            raise KeyError('The key does not exist within the configuration file.')
+        return recommendation
 
     @property
     def title(self) -> str:
         title = self._config.get('TITLE')
-        if title:
-            return title
-        raise KeyError('The key does not exist within the configuration file.')
+        if not title:
+            raise KeyError('The key does not exist within the configuration file.')
+        return title
 
     @property
     def assessment_status(self) -> str:
         assessment_status = self._config.get('ASSESSMENT_STATUS')
-        if assessment_status:
-            return assessment_status
-        raise KeyError('The key does not exist within the configuration file.')
+        if not assessment_status:
+            raise KeyError('The key does not exist within the configuration file.')
+        return assessment_status
 
     @property
     def description(self) -> str:
         description = self._config.get('DESCRIPTION')
-        if description:
-            return description
-        raise KeyError('The key does not exist within the configuration file.')
+        if not description:
+            raise KeyError('The key does not exist within the configuration file.')
+        return description
 
     @property
     def rationale(self) -> str:
         rationale = self._config.get('RATIONALE')
-        if rationale:
-            return rationale
-        raise KeyError('The key does not exist within the configuration file.')
+        if not rationale:
+            raise KeyError('The key does not exist within the configuration file.')
+        return rationale
 
     @property
     def impact(self) -> str:
         impact = self._config.get('IMPACT')
-        if impact:
-            return impact
-        raise KeyError('The key does not exist within the configuration file.')
+        if not impact:
+            raise KeyError('The key does not exist within the configuration file.')
+        return impact
 
     @property
     def safeguard(self) -> str:
         safeguard = self._config.get('SAFEGUARD')
-        if safeguard:
-            return safeguard
-        raise KeyError('The key does not exist within the configuration file.')
+        if not safeguard:
+            raise KeyError('The key does not exist within the configuration file.')
+        return safeguard
 
     @property
     def overview_sheet(self) -> str:
         overview_sheet = self._config.get('OVERVIEW_SHEET')
-        if overview_sheet:
-            return overview_sheet
-        raise KeyError('The key does not exist within the configuration file.')
+        if not overview_sheet:
+            raise KeyError('The key does not exist within the configuration file.')
+        return overview_sheet
 
     @property
     def required_columns(self) -> set:
         required_column_titles = set(self._config.get('REQUIRED_COLUMN_TITLES'))
-        if required_column_titles:
-            return required_column_titles
-        raise KeyError('The key does not exist within the configuration file.')
+        if not required_column_titles:
+            raise KeyError('The key does not exist within the configuration file.')
+        return required_column_titles
 
     @property
     def commands_path(self) -> str:
         commands_path = self._config.get('COMMANDS_PATH')
-        if commands_path:
-            return commands_path
-        raise KeyError('The key does not exist within the configuration file.')
+        if not commands_path:
+            raise KeyError('The key does not exist within the configuration file.')
+        return commands_path
 
     def __repr__(self):
         return f'CISBenchmarksLoadConfig(config_path="{self._config_path}", config_loader="{self._config_loader}")'
