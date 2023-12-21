@@ -1,12 +1,12 @@
 from typing import Tuple, Dict, NamedTuple, List
 from openpyxl.worksheet.worksheet import Worksheet
-from workbook_management.excel_workbook_manager import ExcelOpenWorkbook
+from workbook_management.workbook_manager import ExcelOpenWorkbook
 from config_management.config_manager import ControlsConfigAttrs
 from DataModels import CISControl, CISControlFamily
 from collections import namedtuple
 from collections import Counter
 from workbook_management.interfaces import IWorkbookLoader
-from workbook_management.excel_workbook_manager import ExcelValidator
+from workbook_management.workbook_manager import ExcelValidator
 from config_management.interfaces import IConfigLoader
 from utils.validation_utils import validate_and_return_file_path
 from enum import Enum
@@ -24,9 +24,9 @@ class CISControlsLoadConfig(ControlsConfigAttrs):
 
     def _load_config(self) -> dict:
         config = self._config_loader.load(self._config_path).get(self._config_title)
-        if config:
-            return config
-        raise KeyError('This configuration does not exist within the configuration file.')
+        if not config:
+            raise KeyError('This configuration does not exist within the configuration file.')
+        return config
 
     @property
     def worksheet_name(self) -> str:

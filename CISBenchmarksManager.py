@@ -1,11 +1,12 @@
 import json
+import subprocess
 from enum import Enum
 import openpyxl
 from DataModels import Recommendation, RecommendHeader, AuditCmd
 from config_management.interfaces import IConfigLoader
 from config_management.loaders import JSONConfigLoader
-from workbook_management.excel_workbook_manager import ExcelOpenWorkbook, ExcelValidator
-from CISAuditCommandsManager import AuditCommandManager
+from workbook_management.workbook_manager import ExcelOpenWorkbook, ExcelValidator
+from CISAuditManager import AuditCommandManager
 from CISControlsManager import CISControlsProcessWorkbook
 import re
 from collections import defaultdict
@@ -18,7 +19,7 @@ from workbook_management.loaders import OpenPyXLWorkbookLoader
 
 
 class CISBenchmarksConst(Enum):
-    CIS_BENCHMARKS_CONFIG = 'CISBenchmarksManager'
+    CIS_BENCHMARKS_CONFIG = 'CISBenchmarksConfig'
     RECOMMENDATION = 'recommendation'
     RECOMMEND_HEADER = 'recommend_header'
     ALLOWED_ITEMS = {RECOMMENDATION, RECOMMEND_HEADER}
@@ -128,11 +129,25 @@ class CISBenchmarksLoadConfig(BenchmarksConfigAttrs):
         return required_column_titles
 
     @property
-    def commands_path(self) -> str:
-        commands_path = self._config.get('COMMANDS_PATH')
-        if not commands_path:
+    def workbooks_os_mapping(self) -> dict:
+        workbooks_os_mapping = self._config.get('WORKBOOKS_OS_MAPPING')
+        if not workbooks_os_mapping:
             raise KeyError('The key does not exist within the configuration file.')
-        return commands_path
+        return workbooks_os_mapping
+
+    @property
+    def os_version_rex(self) -> str:
+        os_version_rex = self._config.get('OS_VERSION_REX')
+        if not os_version_rex:
+            raise KeyError('The key does not exist within the configuration file.')
+        return os_version_rex
+
+    @property
+    def os_versions_mapping(self) -> dict:
+        os_versions_mapping = self._config.get('OS_VERSIONS_MAPPING')
+        if not os_versions_mapping:
+            raise KeyError('The key does not exist within the configuration file.')
+        return os_versions_mapping
 
     def __repr__(self):
         return f'CISBenchmarksLoadConfig(config_path="{self._config_path}", config_loader="{self._config_loader}")'
@@ -194,15 +209,56 @@ class CISBenchmarksWorkbookValidator(ExcelValidator):
 
 
 class CISBenchmarksProcessWorkbook(CISBenchmarksLoadWorkbook):
-    def __init__(self, *, workbook_loader: IWorkbookLoader, workbook_path: str, benchmarks_config: CISBenchmarksLoadConfig):
-        super().__init__(workbook_loader=workbook_loader, workbook_path=workbook_path)
+    def __init__(self, *, workbook_loader: IWorkbookLoader, workbook_path: str = None, benchmarks_config: CISBenchmarksLoadConfig):
         self._config = benchmarks_config
+        if workbook_path is None:
+            workbook_path = self._get_os_version_workbook_path()
+        super().__init__(workbook_loader=workbook_loader, workbook_path=workbook_path)
         self._validator = CISBenchmarksWorkbookValidator(self._workbook)
         self._scope_levels_os_mapping = self._get_scope_levels_os_mapping()
         self._allowed_scope_levels = set(map(int, self._config.allowed_scope_levels.keys()))
         self._recommendations_cache = {}
         self._headers_cache = {}
         self._populate_benchmark_cache_and_headers()
+
+    def _get_current_os_version(self) -> str:
+        os_version_rex = self._config.os_version_rex
+        os_versions_mapping = self._config.os_versions_mapping
+        allowed_os_versions = set(os_versions_mapping.values())
+
+        try:
+            os_cmd = subprocess.run('sw_vers', stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+            stdout = os_cmd.stdout.decode('UTF-8').split('\n')
+            stderr = os_cmd.stderr.decode('UTF-8').split('\n')
+            return_code = os_cmd.returncode
+
+            if return_code != 0:
+                return stderr[0]
+
+            match = re.findall(os_version_rex, stdout[1])
+            if not match:
+                raise ValueError(f"OS version regex match failed. Regex pattern: '{os_version_rex}'")
+
+            rex_os = match[0]
+            os_version = os_versions_mapping.get(rex_os)
+
+            if not os_version:
+                raise ValueError(f'"{os_version}" does not exist.')
+            if os_version not in allowed_os_versions:
+                raise KeyError(f"'{os_version}' is not in the allowed OS versions. Allowed OS versions: '{', '.join(allowed_os_versions)}'")
+
+            return os_version
+
+        except (RuntimeError, ValueError, IndexError, KeyError) as error:
+            print(f"Error occurred: '{error}'.")
+
+    def _get_os_version_workbook_path(self):
+        os_version = self._get_current_os_version()
+        workbooks_os_mapping = self._config.workbooks_os_mapping
+        os_version_workbook_path = workbooks_os_mapping.get(os_version)
+        if not os_version_workbook_path:
+            raise ValueError(f'OS version path for {os_version_workbook_path} does not exist.')
+        return os_version_workbook_path
 
     def _get_overview_worksheet(self) -> Worksheet:
         sheet_name = self._validator.validate_and_return_sheet_name(self._config.overview_sheet)
@@ -339,7 +395,7 @@ openpyxl_workbook_loader = OpenPyXLWorkbookLoader()
 cis_benchmarks_config = CISBenchmarksLoadConfig(config_loader=json_config_loader,
                                                 config_path='config/cis_workbooks_config.json')
 workbook_processor = CISBenchmarksProcessWorkbook(workbook_loader=openpyxl_workbook_loader,
-                                                  workbook_path='cis_benchmarks/CIS_Apple_macOS_13.0_Ventura_Benchmark_v2.0.0.1.xlsx',
+                                                  workbook_path='cis_benchmarks/CIS_Apple_macOS_14.0_Sonoma_Benchmark_v1.0.0.xlsx',
                                                   benchmarks_config=cis_benchmarks_config)
 
 print(workbook_processor.get_all_levels_recommendations())

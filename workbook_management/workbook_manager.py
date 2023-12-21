@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Set
+from typing import Set, List
 from workbook_management.interfaces import IWorkbookLoader
 
 
@@ -25,3 +25,7 @@ class ExcelValidator(ABC):
     @abstractmethod
     def validate_and_return_sheet_name(self, sheet_name: str) -> str:
         pass
+
+
+class AuditValidator(ABC):
+    pass

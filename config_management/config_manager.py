@@ -12,6 +12,16 @@ class OpenConfig(ABC):
         pass
 
 
+class OpenCommands(ABC):
+    def __init__(self, os_version: str, config_loader: IConfigLoader):
+        self._config_loader = config_loader
+        self._commands = self._load_commands(os_version)
+
+    @abstractmethod
+    def _load_commands(self, os_version: str):
+        pass
+
+
 class ControlsConfigAttrs(OpenConfig):
     @property
     @abstractmethod
@@ -122,7 +132,17 @@ class BenchmarksConfigAttrs(OpenConfig):
 
     @property
     @abstractmethod
-    def commands_path(self) -> str:
+    def workbooks_os_mapping(self) -> dict:
+        pass
+
+    @property
+    @abstractmethod
+    def os_version_rex(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def os_versions_mapping(self) -> dict:
         pass
 
 
@@ -140,4 +160,9 @@ class AuditAttrs(OpenConfig):
     @property
     @abstractmethod
     def allowed_os_versions(self) -> list:
+        pass
+
+    @property
+    @abstractmethod
+    def audit_commands_path(self) -> str:
         pass

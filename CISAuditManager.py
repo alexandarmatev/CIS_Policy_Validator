@@ -1,18 +1,18 @@
 from typing import List, Dict, Tuple
 from config_management.interfaces import IConfigLoader
-from utils.validation_utils import validate_and_return_file_path, validate_and_return_os_version, validate_and_return_workbook_version_path
-from utils.config_load_utils import load_config
-from config_management.config_manager import AuditAttrs
+from utils.validation_utils import validate_and_return_file_path
+from config_management.config_manager import AuditAttrs, OpenCommands
+from workbook_management.workbook_manager import AuditValidator
 from enum import Enum
 import subprocess
 import re
 
 
 class CISAuditConst(Enum):
-    CIS_AUDIT_CONFIG = 'CISAuditCommandsManager'
+    CIS_AUDIT_CONFIG = 'CISAuditConfig'
 
 
-class CISAuditCommandsLoadConfig(AuditAttrs):
+class CISAuditLoadConfig(AuditAttrs):
     def __init__(self, *, config_path: str, config_loader: IConfigLoader):
         self._config_path = validate_and_return_file_path(config_path, 'json')
         self._config_title = CISAuditConst.CIS_AUDIT_CONFIG.value
@@ -20,9 +20,9 @@ class CISAuditCommandsLoadConfig(AuditAttrs):
 
     def _load_config(self) -> dict:
         config = self._config_loader.load(self._config_path).get(self._config_title)
-        if config:
-            return config
-        raise KeyError('This configuration does not exist within the configuration file.')
+        if not config:
+            raise KeyError('This configuration does not exist within the configuration file.')
+        return config
 
     @property
     def os_version_rex(self) -> str:
@@ -45,8 +45,44 @@ class CISAuditCommandsLoadConfig(AuditAttrs):
             raise KeyError('The key does not exist within the configuration file.')
         return allowed_os_versions
 
+    @property
+    def workbooks_os_mapping(self) -> Dict:
+        workbooks_os_mapping = self._config.get('WORKBOOKS_OS_MAPPING')
+        if not workbooks_os_mapping:
+            raise KeyError('The key does not exist within the configuration file.')
+        return workbooks_os_mapping
+
+    @property
+    def audit_commands_path(self) -> str:
+        audit_command_path = self._config.get('AUDIT_COMMANDS_PATH')
+        if not audit_command_path:
+            raise KeyError('The key does not exist within the configuration file.')
+        return audit_command_path
+
     def __repr__(self):
-        return f'CISAuditCommandsLoadConfig(config_path="{self._config_path}", config_loader="{self._config_loader}")'
+        return f'CISAuditLoadConfig(config_path="{self._config_path}", config_loader="{self._config_loader}")'
+
+
+class CISAuditLoadCommands(OpenCommands):
+    def __init__(self, commands_path: str, os_version: str, config_loader: IConfigLoader):
+        self._commands_path = validate_and_return_file_path(commands_path, 'json')
+        super().__init__(os_version, config_loader)
+
+    def _load_commands(self, os_version: str) -> dict:
+        commands = self._config_loader.load(self._commands_path).get(os_version)
+        if not commands:
+            raise KeyError(f'The commands for "{os_version}" do not exist within the configuration file.')
+        return commands
+
+    @property
+    def all_audit_commands(self):
+        if not self._commands:
+            raise KeyError('Audit commands are not available.')
+        return self._commands
+
+
+class CISAuditValidator(AuditValidator):
+    pass
 
 
 class AuditCommandManager:

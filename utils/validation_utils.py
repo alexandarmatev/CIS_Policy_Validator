@@ -1,5 +1,4 @@
 import os
-from typing import List
 
 ALLOWED_EXTENSIONS = {'xlsx', 'json'}
 
@@ -52,45 +51,3 @@ def data_type_validator(attr_name: str, attr_value, attr_type: type):
     """
     if attr_value and not isinstance(attr_value, attr_type):
         raise TypeError(f'Provided argument "{attr_value}" to {attr_name} must be of type {attr_type.__name__}.')
-
-
-def validate_and_return_os_version(os_version: str, allowed_versions: List[str]) -> str:
-    """
-    Validates if the given OS version is in the list of allowed versions.
-
-    Parameters:
-        os_version: The OS version to validate.
-        allowed_versions: A list of allowed OS versions.
-
-    Returns:
-        The validated OS version.
-
-    Raises:
-        ValueError: If the OS version is not in the list of allowed versions.
-    """
-    if os_version not in allowed_versions:
-        raise ValueError(
-            f"Mac OS {os_version} cannot be audited. Auditable OS versions are: {', '.join(allowed_versions)}")
-    return os_version
-
-
-def validate_and_return_workbook_version_path(os_version: str) -> str:
-    """
-    Determines the workbook path based on the OS version.
-
-    Parameters:
-        os_version: The OS version.
-
-    Returns:
-        The path to the workbook for the specified OS version.
-
-    Raises:
-        ValueError: If the OS version does not have an associated workbook path.
-    """
-    if os_version == 'MacOS Ventura':
-        workbook_version_path = 'cis_benchmarks/CIS_Apple_macOS_13.0_Ventura_Benchmark_v2.0.0.1.xlsx'
-    elif os_version == 'MacOS Sonoma':
-        workbook_version_path = 'cis_benchmarks/CIS_Apple_macOS_14.0_Sonoma_Benchmark_v1.0.0.xlsx'
-    else:
-        raise ValueError(f'OS version path for {os_version} does not exist.')
-    return validate_and_return_file_path(workbook_version_path, 'xlsx')

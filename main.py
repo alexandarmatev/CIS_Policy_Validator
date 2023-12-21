@@ -1,6 +1,6 @@
 from CISBenchmarksManager import CISBenchmarkManager
 from CISControlsManager import CISControlsProcessWorkbook, CISControlsLoadConfig
-from CISAuditCommandsManager import AuditCommandManager
+from CISAuditManager import AuditCommandManager
 from ReportManager import ReportManager
 from constants.constants import WORKBOOKS_CONFIG_PATH, JSON_COMMANDS_PATH
 from workbook_management.loaders import OpenPyXLWorkbookLoader
