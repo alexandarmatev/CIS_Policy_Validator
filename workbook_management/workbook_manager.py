@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Set, List
+from typing import Set, Tuple
 from workbook_management.interfaces import IWorkbookLoader
 
 
@@ -28,4 +28,7 @@ class ExcelValidator(ABC):
 
 
 class AuditValidator(ABC):
-    pass
+    @staticmethod
+    @abstractmethod
+    def validate_and_return_audit_cmd_attrs(audit_cmd: str) -> Tuple[str, str | bool]:
+        pass

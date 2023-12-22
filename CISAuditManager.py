@@ -2,10 +2,10 @@ from typing import List, Dict, Tuple
 from config_management.interfaces import IConfigLoader
 from utils.validation_utils import validate_and_return_file_path
 from config_management.config_manager import AuditAttrs, OpenCommands
-from workbook_management.workbook_manager import AuditValidator
+from config_management.loaders import JSONConfigLoader
 from enum import Enum
 import subprocess
-import re
+from workbook_management.workbook_manager import AuditValidator
 
 
 class CISAuditConst(Enum):
@@ -64,7 +64,7 @@ class CISAuditLoadConfig(AuditAttrs):
 
 
 class CISAuditLoadCommands(OpenCommands):
-    def __init__(self, commands_path: str, os_version: str, config_loader: IConfigLoader):
+    def __init__(self, *, commands_path: str, os_version: str, config_loader: IConfigLoader):
         self._commands_path = validate_and_return_file_path(commands_path, 'json')
         super().__init__(os_version, config_loader)
 
@@ -75,80 +75,30 @@ class CISAuditLoadCommands(OpenCommands):
         return commands
 
     @property
-    def all_audit_commands(self):
+    def all_audit_commands(self) -> list:
         if not self._commands:
             raise KeyError('Audit commands are not available.')
         return self._commands
 
 
 class CISAuditValidator(AuditValidator):
-    pass
+    @staticmethod
+    def validate_and_return_audit_cmd_attrs(audit_cmd: dict) -> Tuple[str, str | bool]:
+        if not audit_cmd:
+            raise ValueError('Invalid audit command provided.')
+        command = audit_cmd.get('command')
+        if not command:
+            raise ValueError(f"Audit command for recommend id '{audit_cmd['recommend_id']}'  does not exist.")
+        expected_output = audit_cmd.get('expected_output')
+        if not expected_output:
+            raise ValueError(f"Expected output for recommend id '{audit_cmd['recommend_id']}'  does not exist.")
+        return command, expected_output
 
 
-class AuditCommandManager:
-    def __init__(self, *, config_path: str, commands_path: str):
-        self._config_path = validate_and_return_file_path(config_path, 'json')
-        self._commands_path = validate_and_return_file_path(commands_path, 'json')
-        self._config = load_config(config_path)[self.__class__.__name__]
-        self._os_version = validate_and_return_os_version(self._get_current_os_version(), self.allowed_os_versions)
-        self._workbook_version_path = validate_and_return_workbook_version_path(self.os_version)
-        self._audit_commands = load_config(commands_path)[self.os_version]
-
-    @property
-    def config(self) -> dict:
-        return self._config
-
-    @property
-    def config_path(self) -> str:
-        return self._config_path
-
-    @property
-    def commands_path(self) -> str:
-        return self._commands_path
-
-    @property
-    def workbook_path(self) -> str:
-        return self._workbook_version_path
-
-    @property
-    def audit_commands(self) -> List[Dict]:
-        if len(self._audit_commands[0]) > 0:
-            return self._audit_commands
-        raise ValueError(f'Audit commands for {self.os_version} not found.')
-
-    @property
-    def os_version(self) -> str:
-        return self._os_version
-
-    @property
-    def os_version_rex(self) -> str:
-        return self.config['OS_VERSION_REX']
-
-    @property
-    def os_mapping(self) -> Dict[str, str]:
-        return self.config['OS_MAPPING']
-
-    @property
-    def allowed_os_versions(self) -> List[str]:
-        return self.config['ALLOWED_OS_VERSIONS']
-
-    def _get_current_os_version(self) -> str:
-        try:
-            stdout, stderr, return_code = self._shell_exec('sw_vers')
-            if return_code != 0:
-                return stderr[0]
-
-            match = re.findall(self.os_version_rex, stdout[1])
-            if not match:
-                raise ValueError(f"OS version regex match failed. Regex pattern: '{self.os_version_rex}'")
-
-            rex_os = match[0]
-            os_version = self.os_mapping[rex_os]
-
-            return os_version
-
-        except (RuntimeError, ValueError, IndexError, KeyError) as error:
-            print(f"Error occurred: '{error}'.")
+class CISAuditRunner:
+    def __init__(self, *,  audit_commands: list):
+        self._audit_commands = audit_commands
+        self._validator = CISAuditValidator()
 
     @staticmethod
     def _shell_exec(command: str) -> Tuple[List[str], List[str], int]:
@@ -158,19 +108,128 @@ class AuditCommandManager:
         return_code = audit_cmd.returncode
         return stdout, stderr, return_code
 
-    @staticmethod
-    def get_command_attrs(audit_command: dict) -> Tuple:
-        command = audit_command['command']
-        expected_output = audit_command['expected_output']
+    def _get_command_attrs(self, audit_cmd: dict) -> Tuple:
+        command, expected_output = self._validator.validate_and_return_audit_cmd_attrs(audit_cmd)
         return command, expected_output
 
-    def run_command(self, audit_cmd: str, expected_output: str) -> str | bool:
-        stdout, stderr, return_code = self._shell_exec(audit_cmd)
+    def run_command(self, audit_cmd: dict) -> str | bool:
+        command, expected_output = self._get_command_attrs(audit_cmd)
+        stdout, stderr, return_code = self._shell_exec(command)
         stdout = [output.strip() for output in stdout if output]
         if return_code != 0 and stderr[0]:
             return stderr[0]
         return expected_output in stdout
 
+
+json_loader = JSONConfigLoader()
+
+configuration_loader = CISAuditLoadConfig(config_loader=json_loader, config_path='config/cis_workbooks_config.json')
+commands_loader = CISAuditLoadCommands(commands_path='config/audit_commands.json', config_loader=json_loader, os_version='MacOS Ventura')
+
+all_audit_commands = commands_loader.all_audit_commands
+cis_audit_runner = CISAuditRunner(audit_commands=all_audit_commands)
+
+for cmd in all_audit_commands:
+    print(cis_audit_runner.run_command(cmd))
+
+
+
+# class AuditCommandManager:
+#     def __init__(self, *, config_path: str, commands_path: str):
+#         self._config_path = validate_and_return_file_path(config_path, 'json')
+#         self._commands_path = validate_and_return_file_path(commands_path, 'json')
+#         self._config = load_config(config_path)[self.__class__.__name__]
+#         self._os_version = validate_and_return_os_version(self._get_current_os_version(), self.allowed_os_versions)
+#         self._workbook_version_path = validate_and_return_workbook_version_path(self.os_version)
+#         self._audit_commands = load_config(commands_path)[self.os_version]
+#
+#     @property
+#     def config(self) -> dict:
+#         return self._config
+#
+#     @property
+#     def config_path(self) -> str:
+#         return self._config_path
+#
+#     @property
+#     def commands_path(self) -> str:
+#         return self._commands_path
+#
+#     @property
+#     def workbook_path(self) -> str:
+#         return self._workbook_version_path
+#
+#     @property
+#     def audit_commands(self) -> List[Dict]:
+#         if len(self._audit_commands[0]) > 0:
+#             return self._audit_commands
+#         raise ValueError(f'Audit commands for {self.os_version} not found.')
+#
+#     @property
+#     def os_version(self) -> str:
+#         return self._os_version
+#
+#     @property
+#     def os_version_rex(self) -> str:
+#         return self.config['OS_VERSION_REX']
+#
+#     @property
+#     def os_mapping(self) -> Dict[str, str]:
+#         return self.config['OS_MAPPING']
+#
+#     @property
+#     def allowed_os_versions(self) -> List[str]:
+#         return self.config['ALLOWED_OS_VERSIONS']
+#
+#     def _get_current_os_version(self) -> str:
+#         try:
+#             stdout, stderr, return_code = self._shell_exec('sw_vers')
+#             if return_code != 0:
+#                 return stderr[0]
+#
+#             match = re.findall(self.os_version_rex, stdout[1])
+#             if not match:
+#                 raise ValueError(f"OS version regex match failed. Regex pattern: '{self.os_version_rex}'")
+#
+#             rex_os = match[0]
+#             os_version = self.os_mapping[rex_os]
+#
+#             return os_version
+#
+#         except (RuntimeError, ValueError, IndexError, KeyError) as error:
+#             print(f"Error occurred: '{error}'.")
+#
+#     @staticmethod
+#     def _shell_exec(command: str) -> Tuple[List[str], List[str], int]:
+#         audit_cmd = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+#         stdout = audit_cmd.stdout.decode('UTF-8').split('\n')
+#         stderr = audit_cmd.stderr.decode('UTF-8').split('\n')
+#         return_code = audit_cmd.returncode
+#         return stdout, stderr, return_code
+#
+#     @staticmethod
+#     def get_command_attrs(audit_command: dict) -> Tuple:
+#         command = audit_command['command']
+#         expected_output = audit_command['expected_output']
+#         return command, expected_output
+#
+#     def run_command(self, audit_cmd: str, expected_output: str) -> str | bool:
+#         stdout, stderr, return_code = self._shell_exec(audit_cmd)
+#         stdout = [output.strip() for output in stdout if output]
+#         if return_code != 0 and stderr[0]:
+#             return stderr[0]
+#         return expected_output in stdout
+
+    # def evaluate_recommendations_compliance(self, *, scope_level: int = 1) -> List[Recommendation]:
+    #     recommendations_scope = self.get_recommendations_by_level(scope_level=scope_level)
+    #     for recommendation in recommendations_scope:
+    #         audit_cmd = recommendation.audit_cmd
+    #         if audit_cmd:
+    #             command = audit_cmd.command
+    #             expected_output = audit_cmd.expected_output
+    #             audit_result = self._audit_manager.run_command(command, expected_output)
+    #             recommendation.compliant = audit_result
+    #             yield recommendation
 
 
 
