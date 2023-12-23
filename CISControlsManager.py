@@ -128,7 +128,7 @@ class CISControlsProcessWorkbook(CISControlsLoadWorkbook):
 
     def _get_worksheet_scope_headers(self) -> Tuple[Worksheet, Dict[str, int]]:
         worksheet_name = self._excel_validator.validate_and_return_sheet_name(self._config.worksheet_name)
-        worksheet = self._workbook.get(worksheet_name)
+        worksheet = self._workbook[worksheet_name]
         if worksheet:
             header_row = next(worksheet.iter_rows(min_row=1, max_row=1, values_only=True))
             column_indices = {title: index for index, title in enumerate(header_row)}
@@ -182,16 +182,6 @@ class CISControlsProcessWorkbook(CISControlsLoadWorkbook):
         total = sum(control_domains.values())
         percentages = {key: round((value / total) * 100, 2) for key, value in control_domains.items()}
         return percentages
-
-
-# json_config_loader = JSONConfigLoader()
-# cis_controls_config = CISControlsLoadConfig(config_loader=json_config_loader,
-#                                             config_path='config/cis_workbooks_config.json')
-#
-# excel_workbook_loader = OpenPyXLWorkbookLoader()
-# workbook_processor = CISControlsProcessWorkbook(workbook_loader=excel_workbook_loader,
-#                                                 workbook_path='cis_controls/CIS_Controls_Version_8.xlsx',
-#                                                 controls_config=cis_controls_config)
 
 
 

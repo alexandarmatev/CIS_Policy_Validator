@@ -1,81 +1,41 @@
-from CISBenchmarksManager import CISBenchmarkManager
-from CISControlsManager import CISControlsProcessWorkbook, CISControlsLoadConfig
-from CISAuditManager import AuditCommandManager
-from ReportManager import ReportManager
-from constants.constants import WORKBOOKS_CONFIG_PATH, JSON_COMMANDS_PATH
-from workbook_management.loaders import OpenPyXLWorkbookLoader
+from CISBenchmarksManager import CISBenchmarksLoadConfig, CISBenchmarksMapper, CISBenchmarksProcessWorkbook
+from CISControlsManager import CISControlsLoadConfig, CISControlsProcessWorkbook
 from config_management.loaders import JSONConfigLoader
+from workbook_management.loaders import OpenPyXLWorkbookLoader
+from CISAuditManager import CISAuditLoadCommands, CISAuditRunner
 
-workbook_loader = OpenPyXLWorkbookLoader()
-config_loader = JSONConfigLoader()
+CONFIG_PATH = 'config/cis_workbooks_config.json'
 
-audit_manager = AuditCommandManager(config_path=WORKBOOKS_CONFIG_PATH, commands_path=JSON_COMMANDS_PATH)
+json_config_loader = JSONConfigLoader()
+openpyxl_workbook_loader = OpenPyXLWorkbookLoader()
 
-workbook_path = audit_manager.workbook_path
-config_path = audit_manager.config_path
-
-cis_controls_config = CISControlsLoadConfig(config_loader=config_loader,
-                                            config_path='config/cis_workbooks_config.json')
-
-excel_workbook_loader = OpenPyXLWorkbookLoader()
-cis_controls_processor = CISControlsProcessWorkbook(workbook_loader=excel_workbook_loader,
+cis_controls_config = CISControlsLoadConfig(config_loader=json_config_loader, config_path=CONFIG_PATH)
+cis_controls_processor = CISControlsProcessWorkbook(workbook_loader=openpyxl_workbook_loader,
                                                     workbook_path='cis_controls/CIS_Controls_Version_8.xlsx',
                                                     controls_config=cis_controls_config)
-workbook = CISBenchmarkManager(workbook_path=workbook_path, config_path=config_path, audit_manager=audit_manager,
-                               cis_control_manager=cis_controls_processor)
+all_cis_controls = cis_controls_processor.get_all_controls()
 
-all_domains_weight = cis_controls_processor.get_all_control_domains_weight()
-evaluated_recommendations = workbook.evaluate_recommendations_compliance(scope_level=1)
-print(list(evaluated_recommendations))
+cis_benchmarks_config = CISBenchmarksLoadConfig(config_loader=json_config_loader, config_path=CONFIG_PATH)
+cis_controls_config = CISControlsLoadConfig(config_loader=json_config_loader, config_path=CONFIG_PATH)
 
-# report_manager = ReportManager(evaluated_recommendations, all_domains_weight)
+audit_commands_loader = CISAuditLoadCommands(commands_path='config/audit_commands.json', commands_loader=json_config_loader)
 
-# report_manager._create_domains_weight_pie_chart()
-# report_manager._create_compliant_recommendations_bar_chart()
+workbook_processor = CISBenchmarksProcessWorkbook(workbook_loader=openpyxl_workbook_loader,
+                                                  workbook_path='cis_benchmarks/CIS_Apple_macOS_14.0_Sonoma_Benchmark_v1.0.0.xlsx',
+                                                  benchmarks_config=cis_benchmarks_config,
+                                                  cis_controls=all_cis_controls,
+                                                  commands_loader=audit_commands_loader)
 
-# print(report_manager.get_compliant_recommendations_percentage())
+level_1_recommendations = workbook_processor.get_recommendations_by_level(scope_level=1)
 
-# for recommendation in evaluated_recommendations:
-#     if recommendation.compliant:
-#         print(f'[+] {recommendation.title} - {recommendation.compliant} - {recommendation.cis_control.title}')
-#     else:
-#         print(f'[-] {recommendation.title} - {recommendation.compliant} - {recommendation.cis_control.title}')
+cis_audit_runner = CISAuditRunner()
+level_1_audited_recommendations = cis_audit_runner.evaluate_recommendations_compliance(recommendations=level_1_recommendations)
 
-# print(workbook.get_all_levels_recommendations())
-# print(workbook.get_all_scopes_recommendation_headers())
-#
-# # Test get_item_by_id method without providing a scope level (default scope level is 1)
-# print(workbook.get_item_by_id(item_id='1.1', item_type='recommendation'))
-#
-# # Test get_item_by_id method for getting recommendation and recommendation header for the different control scopes
-# print(workbook.get_item_by_id(scope_level=1, item_id='1.1', item_type='recommendation'))
-# print(workbook.get_item_by_id(scope_level=2, item_id='2.1.1.1', item_type='recommendation'))
-#
-# print(workbook.get_item_by_id(scope_level=1, item_id='1', item_type='recommend_header'))
-# print(workbook.get_item_by_id(scope_level=2, item_id='2', item_type='recommend_header'))
-#
-# # Test get_scope_recommendations method without providing a scope level (default scope level is 1)
-# print(workbook.get_recommendations_by_level())
-#
-# # Test get_scope_recommendations for scope level 2
-# print(workbook.get_recommendations_by_level(scope_level=2))
-#
-# # Test get_all_recommendations method
-# print(workbook.get_all_levels_recommendations())
-#
-# # Test get_recommendations_scope_headers method without providing a scope level (default scope level is 1)
-# print(workbook.get_recommendations_scope_headers())
-#
-# # Test get_recommendations_scope_headers for scope level 2
-# print(workbook.get_recommendations_scope_headers(scope_level=2))
-#
-# # Test get_all_recommendation_headers method
-# print(workbook.get_all_scopes_recommendation_headers())
-#
-# # Test get recommendations by assessment method
-# recommendations = workbook.get_recommendations_by_assessment_method(scope_level=1, assessment_method='automated')
-#
-# for recommendation in recommendations:
-#     print(recommendation)
-#
-# print(workbook)
+counter = 0
+for audited_recommendation in level_1_audited_recommendations:
+    counter += 1
+    print(f"{audited_recommendation.audit_cmd['title']} - {audited_recommendation.compliant}")
+
+print(counter)
+
+

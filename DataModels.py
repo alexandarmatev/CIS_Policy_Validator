@@ -2,25 +2,25 @@ from dataclasses import dataclass
 from utils.validation_utils import data_type_validator
 
 
-@dataclass(kw_only=True, frozen=True)
-class AuditCmd:
-    """
-    Represents an audit command with its expected output.
-
-    Attributes:
-        command: The audit command to be executed.
-        expected_output: The expected output of the audit command.
-    """
-    command: str
-    expected_output: str
-
-    def __post_init__(self):
-        """
-        Validates the data types of the attributes on instantiation.
-        """
-        for attr_name, attr_type in self.__annotations__.items():
-            attr_value = getattr(self, attr_name)
-            data_type_validator(attr_name, attr_value, attr_type)
+# @dataclass(kw_only=True, frozen=True)
+# class AuditCmd:
+#     """
+#     Represents an audit command with its expected output.
+#
+#     Attributes:
+#         command: The audit command to be executed.
+#         expected_output: The expected output of the audit command.
+#     """
+#     command: str
+#     expected_output: str
+#
+#     def __post_init__(self):
+#         """
+#         Validates the data types of the attributes on instantiation.
+#         """
+#         for attr_name, attr_type in self.__annotations__.items():
+#             attr_value = getattr(self, attr_name)
+#             data_type_validator(attr_name, attr_value, attr_type)
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -75,7 +75,7 @@ class Recommendation:
     safeguard_id: str
     assessment_method: str
     cis_control: CISControl = None
-    audit_cmd: AuditCmd = None
+    audit_cmd: dict = None
     compliant: str = None
 
     def __post_init__(self):

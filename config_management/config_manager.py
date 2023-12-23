@@ -13,12 +13,12 @@ class OpenConfig(ABC):
 
 
 class OpenCommands(ABC):
-    def __init__(self, os_version: str, config_loader: IConfigLoader):
-        self._config_loader = config_loader
-        self._commands = self._load_commands(os_version)
+    def __init__(self, commands_loader: IConfigLoader):
+        self._commands_loader = commands_loader
+        self._all_commands = self._load_commands()
 
     @abstractmethod
-    def _load_commands(self, os_version: str):
+    def _load_commands(self):
         pass
 
 
