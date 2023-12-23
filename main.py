@@ -1,4 +1,4 @@
-from CISBenchmarksManager import CISBenchmarksLoadConfig, CISBenchmarksMapper, CISBenchmarksProcessWorkbook
+from CISBenchmarksManager import CISBenchmarksLoadConfig, CISBenchmarksProcessWorkbook
 from CISControlsManager import CISControlsLoadConfig, CISControlsProcessWorkbook
 from config_management.loaders import JSONConfigLoader
 from workbook_management.loaders import OpenPyXLWorkbookLoader
