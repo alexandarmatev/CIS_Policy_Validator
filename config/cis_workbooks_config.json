@@ -1,9 +1,4 @@
 {
-  "General Configurations":
-  {
-    "COMMANDS_JSON_PATH": "config/audit_commands.json",
-    "CIS_CONTROLS_PATH": "cis_controls/CIS_Controls_Version_8.xlsx"
-  },
   "CISBenchmarksConfig": {
     "ALLOWED_SCOPE_LEVELS": {"1":  "Level 1", "2":  "Level 2"},
     "ALLOWED_ASSESSMENT_METHODS": ["manual", "automated"],
