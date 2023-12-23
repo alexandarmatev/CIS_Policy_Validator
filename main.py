@@ -31,11 +31,8 @@ level_1_recommendations = workbook_processor.get_recommendations_by_level(scope_
 cis_audit_runner = CISAuditRunner()
 level_1_audited_recommendations = cis_audit_runner.evaluate_recommendations_compliance(recommendations=level_1_recommendations)
 
-counter = 0
 for audited_recommendation in level_1_audited_recommendations:
-    counter += 1
     print(f"{audited_recommendation.audit_cmd['title']} - {audited_recommendation.compliant}")
 
-print(counter)
 
 
