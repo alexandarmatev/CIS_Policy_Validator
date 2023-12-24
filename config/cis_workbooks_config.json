@@ -14,6 +14,7 @@
     "OVERVIEW_SHEET": "Overview - Glossary",
     "REQUIRED_COLUMN_TITLES": ["Section #", "Recommendation #", "Title", "Assessment Status", "Description", "Rationale Statement", "Impact Statement", "CIS Safeguards 1 (v8)"],
     "OS_VERSION_REX": "ProductVersion:\\s\\s(\\d+)",
+    "CUSTOM_OS_VERSION_REX": "macOS_(\\d+)",
     "OS_VERSIONS_MAPPING": {"10": "X", "11": "Big Sur", "12": "Monterey", "13": "MacOS Ventura", "14":  "MacOS Sonoma"},
     "WORKBOOKS_OS_MAPPING": {"MacOS Ventura":  "cis_benchmarks/CIS_Apple_macOS_13.0_Ventura_Benchmark_v2.0.0.1.xlsx",
                              "MacOS Sonoma":  "cis_benchmarks/CIS_Apple_macOS_14.0_Sonoma_Benchmark_v1.0.0.xlsx"}

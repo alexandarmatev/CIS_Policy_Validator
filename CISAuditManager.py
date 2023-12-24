@@ -1,4 +1,4 @@
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, NamedTuple
 from DataModels import Recommendation
 from config_management.interfaces import IConfigLoader
 from utils.validation_utils import validate_and_return_file_path
@@ -23,34 +23,6 @@ class CISAuditLoadConfig(AuditAttrs):
         if not config:
             raise KeyError('This configuration does not exist within the configuration file.')
         return config
-
-    @property
-    def os_version_rex(self) -> str:
-        os_version_rex = self._config.get('OS_VERSION_REX')
-        if not os_version_rex:
-            raise KeyError('The key does not exist within the configuration file.')
-        return os_version_rex
-
-    @property
-    def os_versions_mapping(self) -> Dict:
-        os_versions_mapping = self._config.get('OS_VERSIONS_MAPPING')
-        if not os_versions_mapping:
-            raise KeyError('The key does not exist within the configuration file.')
-        return os_versions_mapping
-
-    @property
-    def allowed_os_versions(self) -> List:
-        allowed_os_versions = self._config.get('ALLOWED_OS_VERSIONS')
-        if not allowed_os_versions:
-            raise KeyError('The key does not exist within the configuration file.')
-        return allowed_os_versions
-
-    @property
-    def workbooks_os_mapping(self) -> Dict:
-        workbooks_os_mapping = self._config.get('WORKBOOKS_OS_MAPPING')
-        if not workbooks_os_mapping:
-            raise KeyError('The key does not exist within the configuration file.')
-        return workbooks_os_mapping
 
     @property
     def audit_commands_path(self) -> str:
@@ -87,15 +59,15 @@ class CISAuditLoadCommands(OpenCommands):
 
 class CISAuditValidator(AuditValidator):
     @staticmethod
-    def validate_and_return_audit_cmd_attrs(audit_cmd: Dict) -> Tuple[str, str | bool]:
+    def validate_and_return_audit_cmd_attrs(audit_cmd: NamedTuple) -> Tuple[str, str | bool]:
         if not audit_cmd:
             raise ValueError('Invalid audit command provided.')
-        command = audit_cmd.get('command')
+        command = audit_cmd.command
         if not command:
-            raise ValueError(f"Audit command for recommend id '{audit_cmd['recommend_id']}' does not exist.")
-        expected_output = audit_cmd.get('expected_output')
+            raise ValueError(f"Audit command for recommend id '{audit_cmd.recommend_id}' does not exist.")
+        expected_output = audit_cmd.expected_output
         if not expected_output:
-            raise ValueError(f"Expected output for recommend id '{audit_cmd['recommend_id']}' does not exist.")
+            raise ValueError(f"Expected output for recommend id '{audit_cmd.recommend_id}' does not exist.")
         return command, expected_output
 
 
@@ -111,11 +83,11 @@ class CISAuditRunner:
         return_code = audit_cmd.returncode
         return stdout, stderr, return_code
 
-    def _get_command_attrs(self, audit_cmd: Dict) -> Tuple:
+    def _get_command_attrs(self, audit_cmd: NamedTuple) -> Tuple:
         command, expected_output = self._validator.validate_and_return_audit_cmd_attrs(audit_cmd)
         return command, expected_output
 
-    def run_command(self, audit_cmd: Dict) -> str | bool:
+    def run_command(self, audit_cmd: NamedTuple) -> str | bool:
         command, expected_output = self._get_command_attrs(audit_cmd)
         stdout, stderr, return_code = self._shell_exec(command)
         stdout = [output.strip() for output in stdout if output]

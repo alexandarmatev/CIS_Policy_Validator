@@ -1,4 +1,5 @@
 import subprocess
+from collections import namedtuple
 from enum import Enum
 from CISAuditManager import CISAuditLoadCommands
 from DataModels import Recommendation, RecommendHeader
@@ -137,6 +138,13 @@ class CISBenchmarksLoadConfig(BenchmarksConfigAttrs):
         return os_version_rex
 
     @property
+    def custom_os_version_rex(self) -> str:
+        custom_os_version_rex = self._config.get('CUSTOM_OS_VERSION_REX')
+        if not custom_os_version_rex:
+            raise KeyError('The key does not exist within the configuration file.')
+        return custom_os_version_rex
+
+    @property
     def os_versions_mapping(self) -> Dict:
         os_versions_mapping = self._config.get('OS_VERSIONS_MAPPING')
         if not os_versions_mapping:
@@ -230,10 +238,10 @@ class CISBenchmarksProcessWorkbook(CISBenchmarksLoadWorkbook):
         self._config = benchmarks_config
         if workbook_path is None:
             workbook_path = self._get_os_version_workbook_path()
+            self._audit_commands = commands_loader.get_os_specific_commands(self._get_current_os_version())
+        else:
+            self._audit_commands = commands_loader.get_os_specific_commands(self._get_custom_os_version(workbook_path))
         super().__init__(workbook_loader=workbook_loader, workbook_path=workbook_path)
-        self._audit_commands = commands_loader.get_os_specific_commands(self._get_current_os_version())
-        if not self._audit_commands:
-            raise ValueError('No audit commands found.')
         self._validator = CISBenchmarksWorkbookValidator(self._workbook)
         self._cis_controls = cis_controls
         self._scope_levels_os_mapping = self._get_scope_levels_os_mapping()
@@ -283,6 +291,14 @@ class CISBenchmarksProcessWorkbook(CISBenchmarksLoadWorkbook):
         if not os_version_workbook_path:
             raise ValueError(f'OS version path for {os_version_workbook_path} does not exist.')
         return os_version_workbook_path
+
+    def _get_custom_os_version(self, workbook_path: str):
+        custom_os_version_rex = self._config.custom_os_version_rex
+        regex_result = re.search(custom_os_version_rex, workbook_path).group(1)
+        custom_os_version = self._config.os_versions_mapping.get(regex_result)
+        if not custom_os_version:
+            raise ValueError('OS version cannot be found.')
+        return custom_os_version
 
     def _get_overview_worksheet(self) -> Worksheet:
         sheet_name = self._validator.validate_and_return_sheet_name(self._config.overview_sheet)
@@ -376,8 +392,9 @@ class CISBenchmarksProcessWorkbook(CISBenchmarksLoadWorkbook):
         raise KeyError(f'Item with ID "{item_id}" is not in level "{scope_profile}".')
 
     def _map_recommendations_and_audit_commands(self):
+        AuditCmd = namedtuple('AuditCmd', ['recommend_id', 'title', 'command', 'expected_output'])
         audit_commands = self._audit_commands
-        commands_map = {cmd['recommend_id']: cmd for cmd in audit_commands}
+        commands_map = {cmd['recommend_id']: AuditCmd(**cmd) for cmd in audit_commands}
         for level in self._allowed_scope_levels:
             recommendations = self.get_recommendations_by_level(scope_level=level)
             for recommendation in recommendations:

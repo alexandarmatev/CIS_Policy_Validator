@@ -142,26 +142,16 @@ class BenchmarksConfigAttrs(OpenConfig):
 
     @property
     @abstractmethod
+    def custom_os_version_rex(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
     def os_versions_mapping(self) -> dict:
         pass
 
 
 class AuditAttrs(OpenConfig):
-    @property
-    @abstractmethod
-    def os_version_rex(self) -> str:
-        pass
-
-    @property
-    @abstractmethod
-    def os_versions_mapping(self) -> dict:
-        pass
-
-    @property
-    @abstractmethod
-    def allowed_os_versions(self) -> list:
-        pass
-
     @property
     @abstractmethod
     def audit_commands_path(self) -> str:
