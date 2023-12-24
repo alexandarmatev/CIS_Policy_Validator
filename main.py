@@ -16,7 +16,6 @@ cis_controls_processor = CISControlsProcessWorkbook(workbook_loader=openpyxl_wor
 all_cis_controls = cis_controls_processor.get_all_controls()
 
 cis_benchmarks_config = CISBenchmarksLoadConfig(config_loader=json_config_loader, config_path=CONFIG_PATH)
-cis_controls_config = CISControlsLoadConfig(config_loader=json_config_loader, config_path=CONFIG_PATH)
 
 audit_commands_loader = CISAuditLoadCommands(commands_path='config/audit_commands.json', commands_loader=json_config_loader)
 
