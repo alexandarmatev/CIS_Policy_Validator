@@ -210,28 +210,6 @@ class CISBenchmarksWorkbookValidator(ExcelValidator):
                 f"{assessment_method} is not in allowed assessment methods. The allowed assessment methods are: '{allowed_assessment_methods}'.")
         return assessment_method
 
-
-class CISBenchmarksMapper:
-    def __init__(self, all_controls: List, audit_commands: List):
-        self._all_controls = all_controls
-        self._audit_commands = audit_commands
-
-    def map_recommendations_and_cis_controls(self, all_recommendations: Dict):
-        all_cis_controls = {control.safeguard_id: control for control in self._all_controls}
-        for recommendation in all_recommendations:
-            control = all_cis_controls.get(recommendation.safeguard_id)
-            if control:
-                recommendation.cis_control = control
-
-    def map_recommendations_and_audit_commands(self, all_recommendations: Dict):
-        audit_commands = self._audit_commands
-        commands_map = {cmd['recommend_id']: cmd for cmd in audit_commands}
-
-        for recommendation in all_recommendations:
-            if recommendation.recommend_id in commands_map:
-                recommendation.audit_cmd = commands_map[recommendation.recommend_id]
-
-
 class CISBenchmarksProcessWorkbook(CISBenchmarksLoadWorkbook):
     def __init__(self, *, workbook_loader: IWorkbookLoader, workbook_path: str = None,
                  benchmarks_config: CISBenchmarksLoadConfig, cis_controls: List, commands_loader: CISAuditLoadCommands):
