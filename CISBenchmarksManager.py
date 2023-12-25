@@ -173,7 +173,8 @@ class CISBenchmarksWorkbookValidator(ExcelValidator):
         columns_to_check = column_indices.keys()
         if not required_columns.issubset(columns_to_check):
             missing_columns = required_columns.difference(columns_to_check)
-            raise AttributeError(f"The following columns do not exist in the worksheet: '{', '.join(missing_columns)}'.")
+            raise AttributeError(
+                f"The following columns do not exist in the worksheet: '{', '.join(missing_columns)}'.")
         return True
 
     def validate_and_return_sheet_name(self, sheet_name: str) -> str:
@@ -190,7 +191,8 @@ class CISBenchmarksWorkbookValidator(ExcelValidator):
             raise ValueError(f'{scope_level} is not in the scope levels.')
         return scope_level
 
-    def validate_and_return_benchmark_scope_profile(self, scope_level: int, scope_levels_os_mapping: Dict, allowed_scope_levels: Set) -> str:
+    def validate_and_return_benchmark_scope_profile(self, scope_level: int, scope_levels_os_mapping: Dict,
+                                                    allowed_scope_levels: Set) -> str:
         scope_level = self.validate_and_return_scope_level(scope_level, allowed_scope_levels)
         scope_level_os = scope_levels_os_mapping.get(scope_level)
         if scope_level_os is None:
@@ -209,6 +211,7 @@ class CISBenchmarksWorkbookValidator(ExcelValidator):
             raise ValueError(
                 f"{assessment_method} is not in allowed assessment methods. The allowed assessment methods are: '{allowed_assessment_methods}'.")
         return assessment_method
+
 
 class CISBenchmarksProcessWorkbook(CISBenchmarksLoadWorkbook):
     def __init__(self, *, workbook_loader: IWorkbookLoader, workbook_path: str = None,
@@ -428,8 +431,10 @@ class CISBenchmarksProcessWorkbook(CISBenchmarksLoadWorkbook):
             raise KeyError(f'"{scope_profile}" scope profile is not in the cache.')
         return self._headers_cache.get(scope_profile)
 
-    def get_recommendations_by_assessment_method(self, *, scope_level: int = 1, assessment_method: str = None) -> Generator:
-        assessment_method = self._validator.validate_assessment_method_type(assessment_method, self._config.allowed_assessment_methods)
+    def get_recommendations_by_assessment_method(self, *, scope_level: int = 1,
+                                                 assessment_method: str = None) -> Generator:
+        assessment_method = self._validator.validate_assessment_method_type(assessment_method,
+                                                                            self._config.allowed_assessment_methods)
         recommendations_scope = self.get_recommendations_by_level(scope_level=scope_level)
         for recommendation in recommendations_scope:
             if assessment_method == recommendation.assessment_method.casefold():
