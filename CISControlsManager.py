@@ -29,60 +29,67 @@ class CISControlsLoadConfig(ControlsConfigAttrs):
         return config
 
     @property
+    def controls_path(self) -> str:
+        controls_path = self._config.get('CONTROLS_PATH')
+        if not controls_path:
+            raise KeyError('The key does not exist within the configuration file.')
+        return controls_path
+
+    @property
     def worksheet_name(self) -> str:
         ws_name = self._config.get('WORKSHEET_NAME')
-        if ws_name:
-            return ws_name
-        raise KeyError('The key does not exist within the configuration file.')
+        if not ws_name:
+            raise KeyError('The key does not exist within the configuration file.')
+        return ws_name
 
     @property
     def cis_safeguard(self) -> str:
         cis_safeguard = self._config.get('SAFEGUARD')
-        if cis_safeguard:
-            return cis_safeguard
-        raise KeyError('The key does not exist within the configuration file.')
+        if not cis_safeguard:
+            raise KeyError('The key does not exist within the configuration file.')
+        return cis_safeguard
 
     @property
     def control_family_id(self) -> str:
         control_family_id = self._config.get('CONTROL_FAMILY_ID')
-        if control_family_id:
-            return control_family_id
-        raise KeyError('The key does not exist within the configuration file.')
+        if not control_family_id:
+            raise KeyError('The key does not exist within the configuration file.')
+        return control_family_id
 
     @property
     def asset_type(self) -> str:
         asset_type = self._config.get('ASSET_TYPE')
-        if asset_type:
-            return asset_type
-        raise KeyError('The key does not exist within the configuration file.')
+        if not asset_type:
+            raise KeyError('The key does not exist within the configuration file.')
+        return asset_type
 
     @property
     def domain(self) -> str:
         domain = self._config.get('DOMAIN')
-        if domain:
-            return domain
-        raise KeyError('The key does not exist within the configuration file.')
+        if not domain:
+            raise KeyError('The key does not exist within the configuration file.')
+        return domain
 
     @property
     def title(self) -> str:
         title = self._config.get('TITLE')
-        if title:
-            return title
-        raise KeyError('The key does not exist within the configuration file.')
+        if not title:
+            raise KeyError('The key does not exist within the configuration file.')
+        return title
 
     @property
     def description(self) -> str:
         description = self._config.get('DESCRIPTION')
-        if description:
-            return description
-        raise KeyError('The key does not exist within the configuration file.')
+        if not description:
+            raise KeyError('The key does not exist within the configuration file.')
+        return description
 
     @property
     def required_columns(self) -> set:
         required_columns = set(self._config.get('REQUIRED_COLUMN_TITLES'))
-        if required_columns:
-            return required_columns
-        raise KeyError('The key does not exist within the configuration file.')
+        if not required_columns:
+            raise KeyError('The key does not exist within the configuration file.')
+        return required_columns
 
     def __repr__(self):
         return f'CISControlsLoadConfig(config_path="{self._config_path}", config_loader="{self._config_loader}")'

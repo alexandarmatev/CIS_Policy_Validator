@@ -5,7 +5,6 @@ from workbook_management.loaders import OpenPyXLWorkbookLoader
 from CISAuditManager import CISAuditLoadCommands, CISAuditRunner, CISAuditLoadConfig
 
 CONFIG_PATH = 'config/cis_workbooks_config.json'
-CONTROLS_PATH = 'cis_controls/CIS_Controls_Version_8.xlsx'
 
 json_config_loader = JSONConfigLoader()
 openpyxl_workbook_loader = OpenPyXLWorkbookLoader()
@@ -14,6 +13,8 @@ cis_audit_config = CISAuditLoadConfig(config_path=CONFIG_PATH, config_loader=jso
 COMMANDS_PATH = cis_audit_config.audit_commands_path
 
 cis_controls_config = CISControlsLoadConfig(config_loader=json_config_loader, config_path=CONFIG_PATH)
+CONTROLS_PATH = cis_controls_config.controls_path
+
 cis_controls_processor = CISControlsProcessWorkbook(workbook_loader=openpyxl_workbook_loader,
                                                     workbook_path=CONTROLS_PATH,
                                                     controls_config=cis_controls_config)

@@ -25,6 +25,11 @@ class OpenCommands(ABC):
 class ControlsConfigAttrs(OpenConfig):
     @property
     @abstractmethod
+    def controls_path(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
     def worksheet_name(self) -> str:
         pass
 
