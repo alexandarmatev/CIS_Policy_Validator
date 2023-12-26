@@ -1,6 +1,6 @@
 import dataclasses
 import unittest
-from DataModels import Recommendation, RecommendHeader, AuditCmd, CISControl, CISControlFamily
+from data_models import Recommendation, RecommendHeader, AuditCmd, CISControl, CISControlFamily
 
 
 def run_tests(test_class):

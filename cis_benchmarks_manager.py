@@ -1,8 +1,8 @@
 import subprocess
 from collections import namedtuple
 from enum import Enum
-from CISAuditManager import CISAuditLoadCommands
-from DataModels import Recommendation, RecommendHeader
+from cis_audit_manager import CISAuditLoadCommands
+from data_models.data_models import Recommendation, RecommendHeader
 from config_management.interfaces import IConfigLoader
 from workbook_management.workbook_manager import ExcelOpenWorkbook, ExcelValidator
 import re

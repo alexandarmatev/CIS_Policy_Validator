@@ -1,5 +1,5 @@
 from typing import List, Dict, Tuple, NamedTuple
-from DataModels import Recommendation
+from data_models.data_models import Recommendation
 from config_management.interfaces import IConfigLoader
 from utils.validation_utils import validate_and_return_file_path
 from config_management.config_manager import AuditAttrs, OpenCommands

@@ -2,7 +2,7 @@ from typing import Tuple, Dict, NamedTuple, List
 from openpyxl.worksheet.worksheet import Worksheet
 from workbook_management.workbook_manager import ExcelOpenWorkbook
 from config_management.config_manager import ControlsConfigAttrs
-from DataModels import CISControl, CISControlFamily
+from data_models.data_models import CISControl, CISControlFamily
 from collections import namedtuple
 from collections import Counter
 from workbook_management.interfaces import IWorkbookLoader

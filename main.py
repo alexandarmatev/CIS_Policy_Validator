@@ -1,8 +1,8 @@
-from CISBenchmarksManager import CISBenchmarksLoadConfig, CISBenchmarksProcessWorkbook
-from CISControlsManager import CISControlsLoadConfig, CISControlsProcessWorkbook
+from cis_benchmarks_manager import CISBenchmarksLoadConfig, CISBenchmarksProcessWorkbook
+from cis_controls_manager import CISControlsLoadConfig, CISControlsProcessWorkbook
 from config_management.loaders import JSONConfigLoader
 from workbook_management.loaders import OpenPyXLWorkbookLoader
-from CISAuditManager import CISAuditLoadCommands, CISAuditRunner, CISAuditLoadConfig
+from cis_audit_manager import CISAuditLoadCommands, CISAuditRunner, CISAuditLoadConfig
 
 CONFIG_PATH = 'config/cis_workbooks_config.json'
 
