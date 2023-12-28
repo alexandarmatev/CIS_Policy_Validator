@@ -49,6 +49,13 @@
       "expected_output": "1"
     },
     {
+      "recommend_id": "2.1.1.3",
+      "title": "Ensure iCloud Drive Document and Desktop Sync Is Disabled",
+      "command": "output=$(/usr/bin/sudo /usr/bin/osascript -l JavaScript <<EOS\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.applicationaccess').objectForKey('allowCloudDesktopAndDocuments').js\nEOS\n)\n\nif [ -z \"$output\" ]; then\noutput1=$(/usr/bin/sudo -u \"$(whoami)\" /bin/ls -l /Users/\"$(whoami)\"/Library/Mobile\\ Documents/com~apple~CloudDocs/Documents/ 2> /dev/null | /usr/bin/grep total)\noutput2=$(/usr/bin/sudo -u \"$(whoami)\" /bin/ls -l /Users/\"$(whoami)\"/Library/Mobile\\ Documents/com~apple~CloudDocs/Desktop/ 2> /dev/null | /usr/bin/grep total)\nfi\n\nif [ -z \"$output1\" ] && [ -z \"$output2\" ]; then\necho \"true\"\nelse\necho \"false\"\nfi",
+      "expected_output": "true"
+
+    },
+    {
       "recommend_id": "2.2.1",
       "title": "Ensure Firewall Is Enabled",
       "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\nfunction run() {\napp = Application.currentApplication()\napp.includeStandardAdditions = true;\n\n let pref1 = app.doShellScript('/usr/bin/defaults read /Library/Preferences/com.apple.alf globalstate')\n let pref2 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.security.firewall')\n .objectForKey('EnableFirewall'))\n\n if ( ( ( pref1 == 1 ) || ( pref1 == 2 ) || ( pref2 == \"true\" ) ) && (pref1 != 0 ) ) {\n return(\"true\")\n } else {\n return(\"false\")\n }\n\n}\nEOS",
@@ -130,6 +137,18 @@
       "recommend_id": "2.3.3.8",
       "title": "Ensure Internet Sharing Is Disabled",
       "command": "output=$(/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.MCX')\n.objectForKey('forceInternetSharingOff').js\nEOS\n)\n\nif [ -z \"$output\" ]; then\nenabledOutput=$(/usr/bin/sudo /usr/bin/defaults read /Library/Preferences/SystemConfiguration/com.apple.nat | awk '/Enabled/ {i++; if(i==2) print; }')\n\nif [[ $enabledOutput =~ \"Enabled = 1\" ]]; then\necho \"false\"\nelif [[ $enabledOutput =~ \"Enabled = 0\" ]]; then\necho \"true\"\nfi\nelse\n  echo \"$output\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "2.3.3.9",
+      "title": "Ensure Content Caching Is Disabled",
+      "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\nfunction run() {\n let pref1 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.AssetCache')\n .objectForKey('Activated'))\nlet pref2 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.applicationaccess')\n .objectForKey('allowContentCaching'))\nif ( ( pref1 == 0 ) || ( pref2 == 0 ) ) {\n return(\"true\")\n } else {\n return(\"false\")\n }\n}\nEOS",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "2.3.3.10",
+      "title": "Ensure Media Sharing Is Disabled",
+      "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\nfunction run() {\n let pref1 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.preferences.sharing.SharingPrefsExtension')\n .objectForKey('homeSharingUIStatus'))\n let pref2 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.preferences.sharing.SharingPrefsExtension')\n .objectForKey('legacySharingUIStatus'))\nlet pref3 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.preferences.sharing.SharingPrefsExtension')\n .objectForKey('mediaSharingUIStatus'))\nif ( pref1 == 0 && pref2 == 0 && pref3 == 0 ) {\n return(\"true\")\n } else {\n return(\"false\")\n }\n}\nEOS",
       "expected_output": "true"
     },
     {
@@ -244,6 +263,54 @@
       "recommend_id": "2.12.3",
       "title": "Ensure Automatic Login Is Disabled",
       "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\nfunction run() {\n let pref1 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.loginwindow')\n.objectForKey('com.apple.login.mcx.DisableAutoLoginClient'))\nlet pref2 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.loginwindow')\n.objectForKey('autoLoginUser'))\nif ( pref1 == 1 || pref2 == null ) {\n return(\"true\")\n } else {\n return(\"false\")\n }\n}\nEOS",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "2.3.4.1",
+      "title": "Ensure Backup Automatically is Enabled If Time Machine Is Enabled",
+      "command": "output=$(/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\nfunction run() {\n let pref1 = ObjC.unwrap($.NSUserDefaults.alloc.initWithSuiteName('com.apple.TimeMachine')\n .objectForKey('AutoBackup'))\nif ( pref1 == null ) {\n return(\"Preference Not Set\")\n } else if ( pref1 == 1 ) {\n return(\"true\")\n } else {\n return(\"false\")\n }\n}\nEOS\n)\n\nif [[ \"$output\" == \"Preference Not Set\" ]] || [[ \"$output\" == \"true\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "2.6.1.1",
+      "title": "Ensure Location Services Is Enabled",
+      "command": "/usr/bin/sudo -u _locationd /usr/bin/osascript -l JavaScript << EOS\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.locationd').objectForKey('LocationServicesEnabled').js\nEOS",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "2.6.1.2",
+      "title": "Ensure Location Services Is in the Menu Bar",
+      "command": "output=$(/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.locationmenu')\n.objectForKey('ShowSystemServices').js\nEOS\n)\n\nif [ \"$output\" = \"true\" ]; then\ncho \"true\"\nelse\necho \"false\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "2.6.3",
+      "title": "Ensure Sending Diagnostic and Usage Data to Apple Is Disabled",
+      "command": "/usr/bin/osascript -l JavaScript << EOS\nfunction run() {\nlet pref1 = $.NSUserDefaults.alloc.initWithSuiteName('com.apple.SubmitDiagInfo')\n.objectForKey('AutoSubmit').js\nlet pref2 = $.NSUserDefaults.alloc.initWithSuiteName('com.apple.applicationaccess')\n.objectForKey('allowDiagnosticSubmission').js\nlet pref3 = $.NSUserDefaults.alloc.initWithSuiteName('com.apple.applicationaccess')\n.objectForKey('Siri Data Sharing Opt-In Status').js\n\nif ( pref1 == false && pref2 == false && pref3 == 2){\n return(\"true\")\n} else {\n return(\"false\")\n}\n}\nEOS",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "2.7.1",
+      "title": "Ensure Screen Saver Corners Are Secure",
+      "command": "result=true\n\noutput_tl=$(/usr/bin/sudo -u \"$(whoami)\" /usr/bin/defaults read com.apple.dock wvous-tl-corner)\nif [ \"$output_tl\" = \"6\" ]; then\nresult=false\nfi\n\noutput_bl=$(/usr/bin/sudo -u \"$(whoami)\" /usr/bin/defaults read com.apple.dock wvous-bl-corner)\nif [ \"$output_bl\" = \"6\" ]; then\nresult=false\nfi\n\noutput_tr=$(/usr/bin/sudo -u \"$(whoami)\" /usr/bin/defaults read com.apple.dock wvous-tr-corner)\nif [ \"$output_tr\" = \"6\" ]; then\nresult=false\nfi\n\noutput_br=$(/usr/bin/sudo -u \"$(whoami)\" /usr/bin/defaults read com.apple.dock wvous-br-corner)\nif [ \"$output_br\" = \"6\" ]; then\nresult=false\nfi\n\necho \"$result\"",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "2.9.1.1",
+      "title": "Ensure the OS Is Not Active When Resuming from Standby (Intel)",
+      "command": "result=true\n\nif /usr/sbin/sysctl -n machdep.cpu.brand_string | /usr/bin/grep -q \"Intel\"; then\n\nif /usr/bin/sudo /usr/sbin/system_profiler SPHardwareDataType | /usr/bin/grep -q \"MacBook\"; then\nstandby_info=$(/usr/bin/sudo /usr/bin/pmset -b -g | /usr/bin/grep -e standby)\n\nstandbydelaylow=$(echo \"$standby_info\" | /usr/bin/grep -o 'standbydelaylow [0-9]*' | cut -d ' ' -f 2)\nstandbydelayhigh=$(echo \"$standby_info\" | /usr/bin/grep -o 'standbydelayhigh [0-9]*' | cut -d ' ' -f 2)\nhighstandbythreshold=$(echo \"$standby_info\" | /usr/bin/grep -o 'highstandbythreshold [0-9]*' | cut -d ' ' -f 2)\n\nif [ -z \"$standbydelaylow\" ] || [ \"$standbydelaylow\" -gt 900 ] || [ -z \"$standbydelayhigh\" ] || [ \"$standbydelayhigh\" -gt 900 ] || [ -z \"$highstandbythreshold\" ] || [ \"$highstandbythreshold\" -lt 90 ]; then\nresult=false\nfi\n\nhibernatemode=$(/usr/bin/sudo /usr/bin/pmset -b -g | /usr/bin/grep -o 'hibernatemode [0-9]*' | cut -d ' ' -f 2)\nif [ -z \"$hibernatemode\" ] || [ \"$hibernatemode\" != \"25\" ]; then\nresult=false\nfi\nelse\nresult=false\nfi\nfi\n\necho \"$result\"",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "2.9.1.2",
+      "title": "Ensure the OS Is Not Active When Resuming from Sleep and Display Sleep (Apple Silicon)",
+      "command": "result=true\n\nif /usr/bin/sudo /usr/sbin/system_profiler SPHardwareDataType | /usr/bin/grep -q -e MacBook; then\n\nresult=true\n\npm_settings=$(/usr/bin/sudo /usr/bin/pmset -g)\n\nsleep_value=$(echo \"$pm_settings\" | /usr/bin/grep -E \"sleep\\s+[0-9]+\" | awk '{for(i=1;i<=NF;i++){if($i==\"sleep\"){print $(i+1)}}}')\nif [ -z \"$sleep_value\" ] || [ \"$sleep_value\" -gt 15 ]; then\nresult=false\nfi\n\ndisplaysleep_value=$(echo \"$pm_settings\" | /usr/bin/grep \"displaysleep\" | awk '{print $2}')\nif [ -z \"$displaysleep_value\" ] || [ \"$displaysleep_value\" -gt 10 ] || [ \"$displaysleep_value\" -gt \"$sleep_value\" ]; then\nresult=false\nfi\n\nhibernatemode_value=$(echo \"$pm_settings\" | /usr/bin/grep \"hibernatemode\" | awk '{print $2}')\nif [ -z \"$hibernatemode_value\" ] || [ \"$hibernatemode_value\" != \"25\" ]; then\nresult=false\nfi\n\necho \"$result\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "2.9.1.3",
+      "title": "Ensure FileVault is Locked on Sleep",
+      "command": "if /usr/bin/sudo /usr/sbin/system_profiler SPHardwareDataType | /usr/bin/grep -q -e MacBook; then\n\nresult=$(/usr/bin/sudo /usr/bin/pmset -b -g | /usr/bin/grep DestroyFVKeyOnStandby)\nif [ \"$result\" = \"DestroyFVKeyOnStandby 1\" ]; then\necho \"true\"\nelse\necho \"false\"\nfi\nfi",
       "expected_output": "true"
     },
     {
@@ -460,9 +527,6 @@
   "MacOS Sonoma": [
   ]
 }
-
-
-
 
 
 

@@ -28,7 +28,7 @@ workbook_processor = CISBenchmarksProcessWorkbook(workbook_loader=openpyxl_workb
                                                   cis_controls=all_cis_controls,
                                                   commands_loader=audit_commands_loader)
 
-level_1_recommendations = workbook_processor.get_recommendations_by_level(scope_level=1)
+level_1_recommendations = workbook_processor.get_recommendations_by_level(scope_level=2)
 
 cis_audit_runner = CISAuditRunner()
 level_1_audited_recommendations = cis_audit_runner.evaluate_recommendations_compliance(recommendations=level_1_recommendations)
