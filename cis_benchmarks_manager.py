@@ -403,15 +403,21 @@ class CISBenchmarksProcessWorkbook(CISBenchmarksLoadWorkbook):
                                                                                     self._allowed_scope_levels)
         return self._get_item_by_id(header_id, self._headers_cache, scope_profile)
 
-    def get_all_levels_recommendations(self) -> Dict[str, List[Dict[str, Recommendation]]]:
-        if not self._recommendations_cache:
-            raise KeyError('Cache is empty.')
-        return self._recommendations_cache
+    def get_all_levels_recommendations(self) -> List[Recommendation]:
+        all_levels_recommendations = []
+        for level in self._allowed_scope_levels:
+            all_levels_recommendations.extend(self.get_recommendations_by_level(scope_level=level))
+        if not all_levels_recommendations:
+            raise KeyError('No recommendations have been found.')
+        return all_levels_recommendations
 
-    def get_all_levels_recommendation_headers(self) -> Dict[str, List[RecommendHeader]]:
-        if not self._headers_cache:
-            raise KeyError('Headers cache is empty.')
-        return self._headers_cache
+    def get_all_levels_recommendation_headers(self) -> List[RecommendHeader]:
+        all_levels_headers = []
+        for level in self._allowed_scope_levels:
+            all_levels_headers.extend(self.get_recommendation_headers_by_level(scope_level=level))
+        if not all_levels_headers:
+            raise KeyError('No recommendation headers have been found.')
+        return all_levels_headers
 
     def get_recommendations_by_level(self, *, scope_level: int = 1) -> List[Recommendation]:
         scope_level = self._validator.validate_and_return_scope_level(scope_level, self._allowed_scope_levels)
@@ -422,7 +428,7 @@ class CISBenchmarksProcessWorkbook(CISBenchmarksLoadWorkbook):
             raise KeyError(f'"{scope_profile}" scope profile is not in the cache.')
         return self._recommendations_cache.get(scope_profile)
 
-    def get_recommendation_headers_by_level(self, *, scope_level: int = 1) -> List[Recommendation]:
+    def get_recommendation_headers_by_level(self, *, scope_level: int = 1) -> List[RecommendHeader]:
         scope_level = self._validator.validate_and_return_scope_level(scope_level, self._allowed_scope_levels)
         scope_profile = self._validator.validate_and_return_benchmark_scope_profile(scope_level,
                                                                                     self._scope_levels_os_mapping,

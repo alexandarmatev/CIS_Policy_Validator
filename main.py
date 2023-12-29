@@ -29,9 +29,10 @@ workbook_processor = CISBenchmarksProcessWorkbook(workbook_loader=openpyxl_workb
                                                   commands_loader=audit_commands_loader)
 
 level_1_recommendations = workbook_processor.get_recommendations_by_level(scope_level=2)
+all_recommendations = workbook_processor.get_all_levels_recommendations()
 
 cis_audit_runner = CISAuditRunner()
-level_1_audited_recommendations = cis_audit_runner.evaluate_recommendations_compliance(recommendations=level_1_recommendations)
+level_1_audited_recommendations = cis_audit_runner.evaluate_recommendations_compliance(recommendations=all_recommendations)
 
 for audited_recommendation in level_1_audited_recommendations:
     print(f"{audited_recommendation.audit_cmd.title} - {audited_recommendation.compliant}")
