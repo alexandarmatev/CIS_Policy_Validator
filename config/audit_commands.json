@@ -320,6 +320,12 @@
       "expected_output": "true"
     },
     {
+      "recommend_id": "3.2",
+      "title": "Ensure Security Auditing Flags For User-Attributable Events Are Configured Per Local Organizational Requirements",
+      "command": "compliant=\"true\"\nrequired_flags=(\"ad\" \"aa\" \"lo\")\nfailed_event_flags=(\"-fm\" \"-ex\" \"-fr\" \"-fw\")\n\ncurrent_flags=$(/usr/bin/sudo /usr/bin/grep -e \"^flags:\" /etc/security/audit_control)\n\ncontains_flag() {\n[[ $current_flags =~ $1 ]] && return 0 || return 1\n}\n\nif contains_flag \"-all\"; then\nfor flag in \"${required_flags[@]}\"; do\nif ! contains_flag \"$flag\"; then\ncompliant=\"false\"\nfi\ndone\nelse\nfor flag in \"${required_flags[@]}\" \"${failed_event_flags[@]}\"; do\nif ! contains_flag \"$flag\"; then\ncompliant=\"false\"\nfi\ndone\nfi\n\necho \"$compliant\"",
+      "expected_output": "true"
+    },
+    {
       "recommend_id": "3.3",
       "title": "Ensure install.log Is Retained for 365 or More Days and No Maximum Size",
       "command": "ttl_output=$(/usr/bin/sudo /usr/bin/grep -i ttl /etc/asl/com.apple.install)\nall_max_output=$(/usr/bin/sudo /usr/bin/grep -i all_max= /etc/asl/com.apple.install)\nif echo \"$ttl_output\" | grep -q \"ttl≥365\" && [[ -z \"$all_max_output\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi\n",
@@ -335,6 +341,12 @@
       "recommend_id": "3.6",
       "title": "Ensure Firewall Logging Is Enabled and Configured",
       "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\nfunction run() {\nlet pref1 = $.NSUserDefaults.alloc.initWithSuiteName('com.apple.security.firewall')\n.objectForKey('EnableLogging').js\nlet pref2 = $.NSUserDefaults.alloc.initWithSuiteName('com.apple.security.firewall')\n.objectForKey('LoggingOption').js\nlet pref3 = $.NSUserDefaults.alloc.initWithSuiteName('com.apple.alf')\n.objectForKey('loggingenabled').js\nlet pref4 = $.NSUserDefaults.alloc.initWithSuiteName('com.apple.alf')\n.objectForKey('loggingoption').js\n if ( ( pref1 == true && pref2 == \"detail\" ) || ( pref3 == 1 && pref4 == 2 ) ) {\n return(\"true\")\n} else {\n return(\"false\")\n}\n}\nEOS",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "4.1",
+      "title": "Ensure Bonjour Advertising Services Is Disabled",
+      "command": "/usr/bin/sudo /usr/bin/osascript -l JavaScript << EOS\n$.NSUserDefaults.alloc.initWithSuiteName('com.apple.mDNSResponder')\n.objectForKey('NoMulticastAdvertisements').js\nEOS",
       "expected_output": "true"
     },
     {
@@ -386,6 +398,12 @@
       "expected_output": "0"
     },
     {
+      "recommend_id": "5.1.7",
+      "title": "Ensure No World Writable Folders Exist in the Library Folder",
+      "command": "output=$(/usr/bin/sudo /usr/bin/find /System/Volumes/Data/Library -type d -perm -2 -ls 2> /dev/null | /usr/bin/grep -v Caches | /usr/bin/grep -v /Preferences/Audio/Data | /usr/bin/wc -l | /usr/bin/xargs)\n\nif [ \"$output\" = 0 ]; then\necho \"true\"\nelse\necho \"false\"\nfi",
+      "expected_output": "true"
+    },
+    {
       "recommend_id": "5.2.1",
       "title": "Ensure Password Account Lockout Threshold Is Configured",
       "command": "max_attempts_output=$(/usr/bin/sudo /usr/bin/pwpolicy -getaccountpolicies 2> /dev/null | /usr/bin/grep \"policyAttributeMaximumFailedAuthentications\")\nmax_attempts=$(echo $max_attempts_output | /usr/bin/cut -d'>' -f2 | /usr/bin/cut -d '<' -f1)\nmax_attempts_result=false\nif [[ \"$max_attempts\" != \"\" && \"$max_attempts\" -le 5 ]]; then\nmax_attempts_result=true\nfi\nlockout_minutes_output=$(/usr/bin/sudo /usr/bin/pwpolicy -getaccountpolicies 2> /dev/null | /usr/bin/grep \"policyAttributeMinutesUntilFailedAuthenticationReset\")\nlockout_minutes=$(echo $lockout_minutes_output | /usr/bin/cut -d'>' -f2 | /usr/bin/cut -d '<' -f1)\nlockout_time_result=false\nif [[ \"$lockout_minutes\" != \"\" && \"$lockout_minutes\" -ge 15 ]]; then\nlockout_time_result=true\nfi\nif [[ \"$max_attempts_result\" == true && \"$lockout_time_result\" == true ]]; then\necho \"true\"\nelse\necho \"false\"\nfi",
@@ -395,6 +413,30 @@
       "recommend_id": "5.2.2",
       "title": "Ensure Password Minimum Length Is Configured",
       "command": "output=$(/usr/bin/sudo /usr/bin/pwpolicy -getaccountpolicies | /usr/bin/grep -e \"policyAttributePassword matches\" | /usr/bin/cut -b 46-53 | /usr/bin/cut -d',' -f1 | /usr/bin/cut -d'{' -f2)\nif [ \"$output\" -ge 15 ]; then\necho \"true\"\nelse\n  echo \"false\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "5.2.3",
+      "title": "Ensure Complex Password Must Contain Alphabetic Characters Is Configured",
+      "command": "pref1=$(/usr/bin/pwpolicy -getaccountpolicies | /usr/bin/grep -e \"Contain at least one number and one alphabetic character.\" | cut -b 13-68)\npref2=$(/usr/bin/pwpolicy -getaccountpolicies | /usr/bin/grep -A1 minimumLetters | /usr/bin/tail -1 | /usr/bin/cut -d'>' -f2 | /usr/bin/cut -d '<' -f1)\n\nif [ \"$pref1\" = \"Contain at least one number and one alphabetic character\" ]; then\necho \"true\"\nelif [[ \"$pref2\" != \"\" && $pref2 -ge 1 ]]; then\necho \"true\"\nelse\necho \"false\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "5.2.4",
+      "title": "Ensure Complex Password Must Contain Numeric Character Is Configured",
+      "command": "pref1=$(/usr/bin/pwpolicy -getaccountpolicies | /usr/bin/grep -e \"Contain at least one number and one alphabetic character.\" | cut -b 13-68)\npref2=$(/usr/bin/pwpolicy -getaccountpolicies | /usr/bin/grep -A1 minimumNumericCharacters | /usr/bin/tail -1 | /usr/bin/cut -d'>' -f2 | /usr/bin/cut -d '<' -f1)\n\nif [ \"$pref1\" = \"Contain at least one number and one alphabetic character\" ]; then\necho \"true\"\nelif [[ \"$pref2\" != \"\" && $pref2 -ge 1 ]]; then\necho \"true\"\nelse\necho \"false\"\nfi\n",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "5.2.5",
+      "title": "Ensure Complex Password Must Contain Special Character Is Configured",
+      "command": "pref1=$(/usr/bin/pwpolicy -getaccountpolicies | /usr/bin/grep -e \"policyAttributePassword matches '(.*[^a-zA-Z0-9].*){1,}'\" | cut -b 12-67)\npref2=$(/usr/bin/pwpolicy -getaccountpolicies | /usr/bin/grep -A1 minimumSymbols | /usr/bin/tail -1 | /usr/bin/cut -d'>' -f2 | /usr/bin/cut -d '<' -f1)\n\nif [ \"$pref1\" = \"policyAttributePassword matches '(.*[^a-zA-Z0-9].*){1,}'\" ]; then\necho \"true\"\nelif [[ \"$pref2\" != \"\" && $pref2 -ge 1 ]]; then\necho \"true\"\nelse \necho \"false\"\nfi",
+      "expected_output": "true"
+    },
+    {
+      "recommend_id": "5.2.6",
+      "title": "Ensure Complex Password Must Contain Uppercase and Lowercase Characters Is Configured",
+      "command": "pref=$(/usr/bin/pwpolicy -getaccountpolicies | /usr/bin/grep -A1 minimumMixedCaseCharacters | /usr/bin/tail -1 | /usr/bin/cut -d'>' -f2 | /usr/bin/cut -d '<' -f1)\n\nif [[ \"$pref\" != \"\" && $pref -ge 1 ]]; then\necho \"true\"\nelse\necho \"false\"\nfi",
       "expected_output": "true"
     },
     {
@@ -446,6 +488,12 @@
       "expected_output": "1"
     },
     {
+      "recommend_id": "5.8",
+      "title": "Ensure a Login Window Banner Exists",
+      "command": "compliant=\"false\"\n\npolicy_banner_files=$(sudo find /Library/Security -name \"PolicyBanner.*\" 2> /dev/null)\n\nif [[ -n $policy_banner_files ]]; then\nall_files_compliant=\"true\"\n\nfor file in $policy_banner_files; do\npermissions=$(sudo /usr/bin/stat -f %A \"$file\")\nthird_digit=${permissions:2:1}\nif [[ $third_digit != \"4\" ]]; then\nall_files_compliant=\"false\"\nbreak\nfi\ndone\n\nif [[ $all_files_compliant == \"true\" ]]; then\ncompliant=\"true\"\nfi\nfi\n\necho \"$compliant\"\n",
+      "expected_output": "true"
+    },
+    {
       "recommend_id": "5.9",
       "title": "Ensure Legacy EFI Is Valid and Updating",
       "command": "processor_brand=$(/usr/bin/sudo /usr/sbin/sysctl -n machdep.cpu.brand_string)\nif [[ \"$processor_brand\" == *\"Apple\"* ]]; then\necho \"true\"\nelse\nt2_check=$(/usr/bin/sudo /usr/sbin/system_profiler SPiBridgeDataType | grep \"T2\")\nefi_check_output=$(/usr/bin/sudo /usr/libexec/firmwarecheckers/eficheck/eficheck --integrity-check)\neficheck_daemon_check=$(/usr/bin/sudo /bin/launchctl list | /usr/bin/grep com.apple.driver.eficheck)\nif [[ \"$t2_check\" == *\"Model Name: Apple T2 Security Chip\"* && \"$efi_check_output\" == *\"Primary allowlist version match found. No changes detected in primary hashes.\" && \"$eficheck_daemon_check\" == \"- 0 com.apple.driver.eficheck\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi\nfi",
@@ -488,6 +536,12 @@
       "expected_output": "true"
     },
     {
+      "recommend_id": "6.3.5",
+      "title": "Audit Hide IP Address in Safari Setting",
+      "command": "username=\"$(whoami)\"\n\noutput=$(sudo -u \"$username\" defaults read /Users/\"$username\"/Library/Containers/com.apple.Safari/Data/Library/Preferences/com.apple.Safari WBSPrivacyProxyAvailabilityTraffic 2> /dev/null)\n\nif [[ $output == 33422564 || $output == 33422572 ]]; then\necho \"true\"\nelse\necho \"false\"\nfi",
+      "expected_output": "true"
+    },
+    {
       "recommend_id": "6.3.6",
       "title": "Ensure Advertising Privacy Protection in Safari Is Enabled",
       "command": "output=$(/usr/bin/sudo /usr/sbin/system_profiler SPConfigurationProfileDataType | /usr/bin/grep \"WebKitPreferences.privateClickMeasurementEnabled\" | /usr/bin/tr -d ' ' 2> /dev/null)\nif [[ -n \"$output\" ]] && [[ \"$output\" == \"\\\"WebKitPreferences.privateClickMeasurementEnabled\\\" = 1;\" ]]; then\necho \"true\"\nelse\noutput=$(/usr/bin/sudo -u \"$(whoami)\" /usr/bin/defaults read /Users/\"$(whoami)\"/Library/Containers/com.apple.Safari/Data/Library/Preferences/com.apple.Safari WebKitPreferences.privateClickMeasurementEnabled 2> /dev/null)\nif [[ \"$output\" == \"1\" ]]; then\necho \"true\"\nelse\necho \"false\"\nfi\nfi",
@@ -527,10 +581,4 @@
   "MacOS Sonoma": [
   ]
 }
-
-
-
-
-
-
 
