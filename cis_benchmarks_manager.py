@@ -373,7 +373,7 @@ class CISBenchmarksProcessWorkbook(CISBenchmarksLoadWorkbook):
         raise KeyError(f'Item with ID "{item_id}" is not in level "{scope_profile}".')
 
     def _map_recommendations_and_audit_commands(self):
-        AuditCmd = namedtuple('AuditCmd', ['recommend_id', 'title', 'command', 'expected_output'])
+        AuditCmd = namedtuple('AuditCmd', ['recommend_id', 'level', 'title', 'command', 'expected_output'])
         audit_commands = self._audit_commands
         commands_map = {cmd['recommend_id']: AuditCmd(**cmd) for cmd in audit_commands}
         for level in self._allowed_scope_levels:

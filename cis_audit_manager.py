@@ -10,6 +10,7 @@ from workbook_management.workbook_manager import AuditValidator
 
 class CISAuditConst(Enum):
     CIS_AUDIT_CONFIG = 'CISAuditConfig'
+    COMMANDS_KEY = 'AUDIT_COMMANDS_PATH'
 
 
 class CISAuditLoadConfig(AuditAttrs):
@@ -26,10 +27,10 @@ class CISAuditLoadConfig(AuditAttrs):
 
     @property
     def audit_commands_path(self) -> str:
-        audit_command_path = self._config.get('AUDIT_COMMANDS_PATH')
-        if not audit_command_path:
+        audit_commands_path = self._config.get(CISAuditConst.COMMANDS_KEY.value)
+        if not audit_commands_path:
             raise KeyError('The key does not exist within the configuration file.')
-        return audit_command_path
+        return audit_commands_path
 
     def __repr__(self):
         return f'CISAuditLoadConfig(config_path="{self._config_path}", config_loader="{self._config_loader}")'
