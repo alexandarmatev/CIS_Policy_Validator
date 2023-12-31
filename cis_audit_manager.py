@@ -96,7 +96,7 @@ class CISAuditRunner:
             return stderr[0]
         return expected_output in stdout
 
-    def evaluate_recommendations_compliance(self, *, recommendations: List) -> List[Recommendation]:
+    def evaluate_recommendations_compliance(self, recommendations: List) -> List[Recommendation]:
         for recommendation in recommendations:
             audit_cmd = recommendation.audit_cmd
             if audit_cmd:

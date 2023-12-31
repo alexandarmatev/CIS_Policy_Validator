@@ -32,7 +32,7 @@ level_1_recommendations = workbook_processor.get_recommendations_by_level(scope_
 all_recommendations = workbook_processor.get_all_levels_recommendations()
 
 cis_audit_runner = CISAuditRunner()
-combined_audited_recommendations = cis_audit_runner.evaluate_recommendations_compliance(recommendations=all_recommendations)
+combined_audited_recommendations = cis_audit_runner.evaluate_recommendations_compliance(all_recommendations)
 
 for audited_recommendation in combined_audited_recommendations:
     print(f"[{audited_recommendation.audit_cmd.level}] {audited_recommendation.audit_cmd.title} - {audited_recommendation.compliant}")
