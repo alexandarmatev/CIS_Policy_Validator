@@ -11,6 +11,7 @@ from typing import Dict, Tuple, Set, List, Iterator, Generator
 from utils.validation_utils import validate_and_return_file_path
 from workbook_management.interfaces import IWorkbookLoader
 from config_management.config_manager import BenchmarksConfigAttrs
+from exceptions.custom_exceptions import MissingAttributeError
 
 
 class CISBenchmarksConst(Enum):
@@ -34,16 +35,21 @@ class CISBenchmarksLoadConfig(BenchmarksConfigAttrs):
 
     @property
     def allowed_scope_levels(self) -> Dict:
-        scope_levels = {int(level): title for level, title in self._config.get('ALLOWED_SCOPE_LEVELS').items()}
-        if not scope_levels:
-            raise KeyError('The key does not exist within the configuration file.')
+        attribute = self._config.get('ALLOWED_SCOPE_LEVELS')
+        if not attribute:
+            raise MissingAttributeError('ALLOWED_SCOPE_LEVELS')
+        if not isinstance(attribute, dict):
+            raise TypeError(f'Expected object of type {dict.__name__}, got {type(attribute).__name__}.')
+        scope_levels = {int(level): title for level, title in attribute.items()}
         return scope_levels
 
     @property
     def allowed_assessment_methods(self) -> List:
         allowed_assessment_methods = self._config.get('ALLOWED_ASSESSMENT_METHODS')
         if not allowed_assessment_methods:
-            raise KeyError('The key does not exist within the configuration file.')
+            raise MissingAttributeError('ALLOWED_ASSESSMENT_METHODS')
+        if not isinstance(allowed_assessment_methods, list):
+            raise TypeError(f'Expected object of type {list.__name__}, got {type(allowed_assessment_methods).__name__}.')
         return allowed_assessment_methods
 
     @property
@@ -208,8 +214,7 @@ class CISBenchmarksWorkbookValidator(ExcelValidator):
     @staticmethod
     def validate_assessment_method_type(assessment_method: str, allowed_assessment_methods: List) -> str:
         if assessment_method.casefold() not in allowed_assessment_methods:
-            raise ValueError(
-                f"{assessment_method} is not in allowed assessment methods. The allowed assessment methods are: '{allowed_assessment_methods}'.")
+            raise ValueError(f"'{assessment_method}' is not in allowed assessment methods. Allowed assessment methods are: '{allowed_assessment_methods}'.")
         return assessment_method
 
 
@@ -437,10 +442,8 @@ class CISBenchmarksProcessWorkbook(CISBenchmarksLoadWorkbook):
             raise KeyError(f'"{scope_profile}" scope profile is not in the cache.')
         return self._headers_cache.get(scope_profile)
 
-    def get_recommendations_by_assessment_method(self, *, scope_level: int = 1,
-                                                 assessment_method: str = None) -> Generator:
-        assessment_method = self._validator.validate_assessment_method_type(assessment_method,
-                                                                            self._config.allowed_assessment_methods)
+    def get_recommendations_by_assessment_method(self, *, scope_level: int = 1, assessment_method: str) -> Generator:
+        assessment_method = self._validator.validate_assessment_method_type(assessment_method, self._config.allowed_assessment_methods)
         recommendations_scope = self.get_recommendations_by_level(scope_level=scope_level)
         for recommendation in recommendations_scope:
             if assessment_method == recommendation.assessment_method.casefold():
