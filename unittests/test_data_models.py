@@ -1,6 +1,6 @@
 import dataclasses
 import unittest
-from data_models import Recommendation, RecommendHeader, AuditCmd, CISControl, CISControlFamily
+from data_models.data_models import Recommendation, RecommendHeader, CISControl, CISControlFamily
 
 
 def run_tests(test_class):
@@ -18,7 +18,7 @@ class TestRecommendation(unittest.TestCase):
         self.impact = 'Impact Statement'
         self.safeguard_id = '7.3'
         self.assessment_method = 'Automated'
-        self.audit_cmd = AuditCmd(command='ls -l', expected_output='rw-r-x folder1')
+        self.audit_cmd = 'ls -lsa'
 
     def create_recommendation(self):
         return Recommendation(recommend_id=self.recommend_id,
@@ -64,8 +64,7 @@ class TestRecommendation(unittest.TestCase):
                                         rationale=self.rationale,
                                         impact=self.impact,
                                         safeguard_id=self.safeguard_id,
-                                        assessment_method=self.assessment_method,
-                                        audit_cmd=None)
+                                        assessment_method=self.assessment_method)
         self.assertIsNone(recommendation.audit_cmd)
 
     def test_default_value_audit_cmd(self):
@@ -172,53 +171,6 @@ class TestRecommendHeader(unittest.TestCase):
     def test_hashability(self):
         header_set = {self.create_recommend_header(), self.create_recommend_header()}
         self.assertEqual(len(header_set), 1)
-
-
-class TestAuditCmd(unittest.TestCase):
-    def setUp(self):
-        self.command = "ls -l | grep -q 'auditcmd'"
-        self.expected_output = "true"
-
-    def create_auditcmd(self):
-        return AuditCmd(command=self.command, expected_output=self.expected_output)
-
-    def test_create_auditcmd(self):
-        audit_cmd = self.create_auditcmd()
-        self.assertEqual(self.command, audit_cmd.command)
-        self.assertEqual(self.expected_output, audit_cmd.expected_output)
-
-    def test_create_invalid_types(self):
-        invalid_values = {
-            'command': 1,
-            'expected_output': 1
-        }
-        for attr, invalid_value in invalid_values.items():
-            setattr(self, attr, invalid_value)
-            with self.assertRaises(TypeError):
-                self.create_auditcmd()
-
-    def test_missing_required_attributes(self):
-        with self.assertRaises(TypeError):
-            AuditCmd(command=self.command)
-
-    def test_immutability_auditcmd(self):
-        audit_cmd = AuditCmd(command=self.command, expected_output=self.expected_output)
-        with self.assertRaises(dataclasses.FrozenInstanceError):
-            audit_cmd.command = 'New Command'
-
-    def test_edge_case_long_cmd(self):
-        long_cmd = 'a' * 1000
-        audit_cmd = AuditCmd(command=long_cmd, expected_output='true')
-        self.assertEqual(long_cmd, audit_cmd.command)
-
-    def test_equality_of_instances(self):
-        audit_cmd1 = self.create_auditcmd()
-        audit_cmd2 = self.create_auditcmd()
-        self.assertEqual(audit_cmd1, audit_cmd2)
-
-    def test_hashability(self):
-        audit_cmd_set = {self.create_auditcmd(), self.create_auditcmd()}
-        self.assertEqual(len(audit_cmd_set), 1)
 
 
 class TestCISControl(unittest.TestCase):
@@ -330,6 +282,5 @@ class TestCISControlFamily(unittest.TestCase):
 if __name__ == '__main__':
     run_tests(TestRecommendation)
     run_tests(TestRecommendHeader)
-    run_tests(TestAuditCmd)
     run_tests(TestCISControl)
     run_tests(TestCISControlFamily)
