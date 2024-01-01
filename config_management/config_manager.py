@@ -2,6 +2,13 @@ from abc import ABC, abstractmethod
 from config_management.interfaces import IConfigLoader
 
 
+class ValidateConfigProperties(ABC):
+    @staticmethod
+    @abstractmethod
+    def validate_property(attribute, custom_message, expected_type):
+        pass
+
+
 class OpenConfig(ABC):
     def __init__(self, config_loader: IConfigLoader):
         self._config_loader = config_loader

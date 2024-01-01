@@ -10,7 +10,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 from typing import Dict, Tuple, Set, List, Iterator, Generator
 from utils.validation_utils import validate_and_return_file_path
 from workbook_management.interfaces import IWorkbookLoader
-from config_management.config_manager import BenchmarksConfigAttrs
+from config_management.config_manager import BenchmarksConfigAttrs, ValidateConfigProperties
 from exceptions.custom_exceptions import MissingAttributeError
 
 
@@ -21,141 +21,130 @@ class CISBenchmarksConst(Enum):
     ALLOWED_ITEMS = {RECOMMENDATION, RECOMMEND_HEADER}
 
 
+class CISBenchmarksPropsValidator(ValidateConfigProperties):
+    @staticmethod
+    def validate_property(attribute, custom_message, expected_type):
+        if not attribute or attribute is None:
+            raise MissingAttributeError(custom_message)
+        if not isinstance(attribute, expected_type):
+            raise TypeError(f'Expected object of type {expected_type.__name__}, got {type(attribute).__name__}.')
+        return True
+
+
 class CISBenchmarksLoadConfig(BenchmarksConfigAttrs):
     def __init__(self, *, config_path: str, config_loader: IConfigLoader):
         self._config_path = validate_and_return_file_path(config_path, 'json')
         self._config_title = CISBenchmarksConst.CIS_BENCHMARKS_CONFIG.value
+        self._validator = CISBenchmarksPropsValidator()
         super().__init__(config_loader)
 
     def _load_config(self) -> Dict:
         config = self._config_loader.load(self._config_path).get(self._config_title)
-        if not config:
-            raise KeyError('The key does not exist within the configuration file.')
-        return config
+        if self._validator.validate_property(config, self._config_title, Dict):
+            return config
 
     @property
     def allowed_scope_levels(self) -> Dict:
         attribute = self._config.get('ALLOWED_SCOPE_LEVELS')
-        if not attribute:
-            raise MissingAttributeError('ALLOWED_SCOPE_LEVELS')
-        if not isinstance(attribute, dict):
-            raise TypeError(f'Expected object of type {dict.__name__}, got {type(attribute).__name__}.')
-        scope_levels = {int(level): title for level, title in attribute.items()}
-        return scope_levels
+        if self._validator.validate_property(attribute, 'ALLOWED_SCOPE_LEVELS', Dict):
+            scope_levels = {int(level): title for level, title in attribute.items()}
+            return scope_levels
 
     @property
     def allowed_assessment_methods(self) -> List:
         allowed_assessment_methods = self._config.get('ALLOWED_ASSESSMENT_METHODS')
-        if not allowed_assessment_methods:
-            raise MissingAttributeError('ALLOWED_ASSESSMENT_METHODS')
-        if not isinstance(allowed_assessment_methods, list):
-            raise TypeError(f'Expected object of type {list.__name__}, got {type(allowed_assessment_methods).__name__}.')
-        return allowed_assessment_methods
+        if self._validator.validate_property(allowed_assessment_methods, 'ALLOWED_ASSESSMENT_METHODS', List):
+            return allowed_assessment_methods
 
     @property
     def benchmark_profiles_rex(self) -> str:
         benchmark_profiles_rex = self._config.get('BENCHMARK_PROFILES_REX')
-        if not benchmark_profiles_rex:
-            raise KeyError('The key does not exist within the configuration file.')
-        return benchmark_profiles_rex
+        if self._validator.validate_property(benchmark_profiles_rex, 'BENCHMARK_PROFILES_REX', str):
+            return benchmark_profiles_rex
 
     @property
     def section(self) -> str:
         section = self._config.get('SECTION')
-        if not section:
-            raise KeyError('The key does not exist within the configuration file.')
-        return section
+        if self._validator.validate_property(section, 'SECTION', str):
+            return section
 
     @property
     def recommendation(self) -> str:
         recommendation = self._config.get('RECOMMENDATION')
-        if not recommendation:
-            raise KeyError('The key does not exist within the configuration file.')
-        return recommendation
+        if self._validator.validate_property(recommendation, 'RECOMMENDATION', str):
+            return recommendation
 
     @property
     def title(self) -> str:
         title = self._config.get('TITLE')
-        if not title:
-            raise KeyError('The key does not exist within the configuration file.')
-        return title
+        if self._validator.validate_property(title, 'TITLE', str):
+            return title
 
     @property
     def assessment_status(self) -> str:
         assessment_status = self._config.get('ASSESSMENT_STATUS')
-        if not assessment_status:
-            raise KeyError('The key does not exist within the configuration file.')
-        return assessment_status
+        if self._validator.validate_property(assessment_status, 'ASSESSMENT_STATUS', str):
+            return assessment_status
 
     @property
     def description(self) -> str:
         description = self._config.get('DESCRIPTION')
-        if not description:
-            raise KeyError('The key does not exist within the configuration file.')
-        return description
+        if self._validator.validate_property(description, 'DESCRIPTION', str):
+            return description
 
     @property
     def rationale(self) -> str:
         rationale = self._config.get('RATIONALE')
-        if not rationale:
-            raise KeyError('The key does not exist within the configuration file.')
-        return rationale
+        if self._validator.validate_property(rationale, 'RATIONALE', str):
+            return rationale
 
     @property
     def impact(self) -> str:
         impact = self._config.get('IMPACT')
-        if not impact:
-            raise KeyError('The key does not exist within the configuration file.')
-        return impact
+        if self._validator.validate_property(impact, 'IMPACT', str):
+            return impact
 
     @property
     def safeguard(self) -> str:
         safeguard = self._config.get('SAFEGUARD')
-        if not safeguard:
-            raise KeyError('The key does not exist within the configuration file.')
-        return safeguard
+        if self._validator.validate_property(safeguard, 'SAFEGUARD', str):
+            return safeguard
 
     @property
     def overview_sheet(self) -> str:
         overview_sheet = self._config.get('OVERVIEW_SHEET')
-        if not overview_sheet:
-            raise KeyError('The key does not exist within the configuration file.')
-        return overview_sheet
+        if self._validator.validate_property(overview_sheet, 'OVERVIEW_SHEET', str):
+            return overview_sheet
 
     @property
     def required_columns(self) -> Set:
         required_column_titles = set(self._config.get('REQUIRED_COLUMN_TITLES'))
-        if not required_column_titles:
-            raise KeyError('The key does not exist within the configuration file.')
-        return required_column_titles
+        if self._validator.validate_property(required_column_titles, 'REQUIRED_COLUMN_TITLES', Set):
+            return required_column_titles
 
     @property
     def workbooks_os_mapping(self) -> Dict:
         workbooks_os_mapping = self._config.get('WORKBOOKS_OS_MAPPING')
-        if not workbooks_os_mapping:
-            raise KeyError('The key does not exist within the configuration file.')
-        return workbooks_os_mapping
+        if self._validator.validate_property(workbooks_os_mapping, 'WORKBOOKS_OS_MAPPING', Dict):
+            return workbooks_os_mapping
 
     @property
     def os_version_rex(self) -> str:
         os_version_rex = self._config.get('OS_VERSION_REX')
-        if not os_version_rex:
-            raise KeyError('The key does not exist within the configuration file.')
-        return os_version_rex
+        if self._validator.validate_property(os_version_rex, 'OS_VERSION_REX', str):
+            return os_version_rex
 
     @property
     def custom_os_version_rex(self) -> str:
         custom_os_version_rex = self._config.get('CUSTOM_OS_VERSION_REX')
-        if not custom_os_version_rex:
-            raise KeyError('The key does not exist within the configuration file.')
-        return custom_os_version_rex
+        if self._validator.validate_property(custom_os_version_rex, 'CUSTOM_OS_VERSION_REX', str):
+            return custom_os_version_rex
 
     @property
     def os_versions_mapping(self) -> Dict:
         os_versions_mapping = self._config.get('OS_VERSIONS_MAPPING')
-        if not os_versions_mapping:
-            raise KeyError('The key does not exist within the configuration file.')
-        return os_versions_mapping
+        if self._validator.validate_property(os_versions_mapping, 'OS_VERSIONS_MAPPING', Dict):
+            return os_versions_mapping
 
     def __repr__(self):
         return f'CISBenchmarksLoadConfig(config_path="{self._config_path}", config_loader="{self._config_loader}")'
