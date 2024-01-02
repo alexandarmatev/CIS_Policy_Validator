@@ -5,6 +5,8 @@ from workbook_management.interfaces import IWorkbookLoader
 
 class ExcelOpenWorkbook(ABC):
     def __init__(self, workbook_loader: IWorkbookLoader):
+        if not isinstance(workbook_loader, IWorkbookLoader):
+            raise TypeError(f'Expected object of type {IWorkbookLoader.__name__}, got {type(workbook_loader).__name__}.')
         self._workbook_loader = workbook_loader
         self._workbook = self._load_workbook()
 

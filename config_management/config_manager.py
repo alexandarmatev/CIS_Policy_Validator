@@ -11,6 +11,8 @@ class ValidateConfigProperties(ABC):
 
 class OpenConfig(ABC):
     def __init__(self, config_loader: IConfigLoader):
+        if not isinstance(config_loader, IConfigLoader):
+            raise TypeError(f'Expected object of type {IConfigLoader.__name__}, got {type(config_loader).__name__}.')
         self._config_loader = config_loader
         self._config = self._load_config()
 
@@ -21,6 +23,8 @@ class OpenConfig(ABC):
 
 class OpenCommands(ABC):
     def __init__(self, commands_loader: IConfigLoader):
+        if not isinstance(commands_loader, IConfigLoader):
+            raise TypeError(f'Expected object of type {IConfigLoader.__name__}, got {type(commands_loader).__name__}.')
         self._commands_loader = commands_loader
         self._all_commands = self._load_commands()
 

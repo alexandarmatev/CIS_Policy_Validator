@@ -1,11 +1,12 @@
+import re
 import subprocess
 from collections import namedtuple
 from enum import Enum
+from openpyxl import Workbook
 from cis_audit_manager import CISAuditLoadCommands
 from data_models.data_models import Recommendation, RecommendHeader
 from config_management.interfaces import IConfigLoader
 from workbook_management.workbook_manager import ExcelOpenWorkbook, ExcelValidator
-import re
 from openpyxl.worksheet.worksheet import Worksheet
 from typing import Dict, Tuple, Set, List, Iterator, Generator
 from utils.validation_utils import validate_and_return_file_path
@@ -160,7 +161,9 @@ class CISBenchmarksLoadWorkbook(ExcelOpenWorkbook):
 
 
 class CISBenchmarksWorkbookValidator(ExcelValidator):
-    def __init__(self, workbook):
+    def __init__(self, workbook: Workbook):
+        if not isinstance(workbook, Workbook):
+            raise TypeError(f'Expected object of type {Workbook.__name__}, got {type(workbook).__name__}.')
         super().__init__(workbook)
 
     @staticmethod
@@ -208,9 +211,12 @@ class CISBenchmarksWorkbookValidator(ExcelValidator):
 
 
 class CISBenchmarksProcessWorkbook(CISBenchmarksLoadWorkbook):
-    def __init__(self, *, workbook_loader: IWorkbookLoader, workbook_path: str = None,
-                 benchmarks_config: CISBenchmarksLoadConfig, cis_controls: List, commands_loader: CISAuditLoadCommands):
+    def __init__(self, *, workbook_loader: IWorkbookLoader, workbook_path: str = None, benchmarks_config: CISBenchmarksLoadConfig, cis_controls: List, commands_loader: CISAuditLoadCommands):
+        if not isinstance(benchmarks_config, CISBenchmarksLoadConfig):
+            raise TypeError(f'Expected object of type {CISBenchmarksLoadConfig.__name__}, got {type(benchmarks_config).__name__}.')
         self._config = benchmarks_config
+        if not isinstance(commands_loader, CISAuditLoadCommands):
+            raise TypeError(f'Expected object of type {CISAuditLoadCommands.__name__}, got {type(commands_loader).__name__}.')
         if workbook_path is None:
             workbook_path = self._get_os_version_workbook_path()
             self._audit_commands = commands_loader.get_os_specific_commands(self._get_current_os_version())
@@ -259,7 +265,7 @@ class CISBenchmarksProcessWorkbook(CISBenchmarksLoadWorkbook):
         except (RuntimeError, ValueError, IndexError, KeyError) as error:
             print(f"Error occurred: '{error}'.")
 
-    def _get_os_version_workbook_path(self):
+    def _get_os_version_workbook_path(self) -> str:
         os_version = self._get_current_os_version()
         workbooks_os_mapping = self._config.workbooks_os_mapping
         os_version_workbook_path = workbooks_os_mapping.get(os_version)
@@ -267,7 +273,7 @@ class CISBenchmarksProcessWorkbook(CISBenchmarksLoadWorkbook):
             raise ValueError(f'OS version path for {os_version_workbook_path} does not exist.')
         return os_version_workbook_path
 
-    def _get_custom_os_version(self, workbook_path: str):
+    def _get_custom_os_version(self, workbook_path: str) -> str:
         custom_os_version_rex = self._config.custom_os_version_rex
         regex_result = re.search(custom_os_version_rex, workbook_path).group(1)
         custom_os_version = self._config.os_versions_mapping.get(regex_result)
@@ -354,7 +360,7 @@ class CISBenchmarksProcessWorkbook(CISBenchmarksLoadWorkbook):
                                                     assessment_method=assessment_method)
                     self._recommendations_cache[profile].append(recommendation)
 
-    def _get_item_by_id(self, item_id: str, cache: Dict, scope_profile: str):
+    def _get_item_by_id(self, item_id: str, cache: Dict, scope_profile: str) -> Recommendation | RecommendHeader:
         item_id = self._validator.validate_and_return_item_id(item_id)
         scope_items = cache.get(scope_profile)
 
@@ -391,7 +397,7 @@ class CISBenchmarksProcessWorkbook(CISBenchmarksLoadWorkbook):
                                                                                     self._allowed_scope_levels)
         return self._get_item_by_id(recommendation_id, self._recommendations_cache, scope_profile)
 
-    def get_recommendation_header_by_id(self, *, scope_level: int = 1, header_id: str) -> Recommendation:
+    def get_recommendation_header_by_id(self, *, scope_level: int = 1, header_id: str) -> RecommendHeader:
         scope_profile = self._validator.validate_and_return_benchmark_scope_profile(scope_level,
                                                                                     self._scope_levels_os_mapping,
                                                                                     self._allowed_scope_levels)
