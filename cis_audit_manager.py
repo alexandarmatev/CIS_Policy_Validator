@@ -1,8 +1,9 @@
 from typing import List, Dict, Tuple, NamedTuple
 from data_models.data_models import Recommendation
 from config_management.interfaces import IConfigLoader
+from exceptions.custom_exceptions import MissingAttributeError
 from utils.validation_utils import validate_and_return_file_path
-from config_management.config_manager import AuditAttrs, OpenCommands
+from config_management.config_manager import AuditAttrs, OpenCommands, ValidateConfigProperties
 from enum import Enum
 import subprocess
 from workbook_management.workbook_manager import AuditValidator
@@ -13,24 +14,33 @@ class CISAuditConst(Enum):
     COMMANDS_KEY = 'AUDIT_COMMANDS_PATH'
 
 
+class CISAuditPropsValidator(ValidateConfigProperties):
+    @staticmethod
+    def validate_property(attribute, custom_message, expected_type):
+        if not attribute or attribute is None:
+            raise MissingAttributeError(custom_message)
+        if not isinstance(attribute, expected_type):
+            raise TypeError(f'Expected object of type {expected_type.__name__}, got {type(attribute).__name__}.')
+        return True
+
+
 class CISAuditLoadConfig(AuditAttrs):
     def __init__(self, *, config_path: str, config_loader: IConfigLoader):
         self._config_path = validate_and_return_file_path(config_path, 'json')
         self._config_title = CISAuditConst.CIS_AUDIT_CONFIG.value
+        self._validator = CISAuditPropsValidator()
         super().__init__(config_loader)
 
     def _load_config(self) -> Dict:
         config = self._config_loader.load(self._config_path).get(self._config_title)
-        if not config:
-            raise KeyError('This configuration does not exist within the configuration file.')
-        return config
+        if self._validator.validate_property(config, self._config_title, Dict):
+            return config
 
     @property
     def audit_commands_path(self) -> str:
         audit_commands_path = self._config.get(CISAuditConst.COMMANDS_KEY.value)
-        if not audit_commands_path:
-            raise KeyError('The key does not exist within the configuration file.')
-        return audit_commands_path
+        if self._validator.validate_property(audit_commands_path, CISAuditConst.COMMANDS_KEY.value, str):
+            return audit_commands_path
 
     def __repr__(self):
         return f'CISAuditLoadConfig(config_path="{self._config_path}", config_loader="{self._config_loader}")'
