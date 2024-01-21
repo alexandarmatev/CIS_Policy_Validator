@@ -10,8 +10,8 @@ json_config_loader = JSONConfigLoader()
 openpyxl_workbook_loader = OpenPyXLWorkbookLoader()
 
 cis_audit_config = CISAuditLoadConfig(config_path=CONFIG_PATH, config_loader=json_config_loader)
-cis_controls_config = CISControlsLoadConfig(config_loader=json_config_loader, config_path=CONFIG_PATH)
-cis_benchmarks_config = CISBenchmarksLoadConfig(config_loader=json_config_loader, config_path=CONFIG_PATH)
+cis_controls_config = CISControlsLoadConfig(config_path=CONFIG_PATH, config_loader=json_config_loader)
+cis_benchmarks_config = CISBenchmarksLoadConfig(config_path=CONFIG_PATH, config_loader=json_config_loader)
 
 COMMANDS_PATH = cis_audit_config.audit_commands_path
 CONTROLS_PATH = cis_controls_config.controls_path
